@@ -69,6 +69,7 @@ class alpmCallback:
 def upgrade() -> List[str]:
     logger.info('upgrade start')
     handle = pycman.config.init_with_config(PACMAN_CONFIG)
+    pycman.config.cb_log = lambda *_: None
     localdb = handle.get_localdb()
     alpmCallback().setup_hdl(handle)
     t = handle.init_transaction()
