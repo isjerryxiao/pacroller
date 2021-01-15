@@ -30,7 +30,7 @@ REGEX: Dict[str, Pattern] # get through lint
 class checkReport:
     def __init__(self, info: List[str] = None, warn: List[str] = None,
                  crit: List[str] = None, changes: List[Tuple[str]] = None,
-                 date: int = int(time)) -> None:
+                 date: int = int(time())) -> None:
         self._info = info or list()
         self._warn = warn or list()
         self._crit = crit or list()
@@ -86,7 +86,7 @@ class checkReport:
                 ret.append("Package changes:")
                 ret.extend([" " * indent + i for i in pkg_ret])
         if len(ret) == 1:
-            ret.append('all systems go')
+            ret.append('nothing to show')
         return "\n".join(ret)
     def info(self, text: str) -> None:
         logger.debug(f'report info {text}')
@@ -229,7 +229,7 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                 report.crit(f'ALPM {line=} is unknown')
         elif source == 'ALPM-SCRIPTLET':
             (_, _, _pmsg) = _split_log_line(log[ln-1])
-            if _m := REGEX['s_upgrade_pkg'].match(_pmsg):
+            if _m := REGEX['l_upgrade'].match(_pmsg):
                 pkg, *_ = _m.groups()
             elif _m := REGEX['l_install'].match(_pmsg):
                 pkg, *_ = _m.groups()
@@ -237,6 +237,8 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                 pkg, *_ = _m.groups()
             else:
                 report.crit(f'{line=} has unknown SCRIPTLET output')
+                ln += 1
+                continue
             logger.debug(f'.install start {pkg=}')
             while True:
                 ln += 1

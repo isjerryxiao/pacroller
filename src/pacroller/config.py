@@ -27,7 +27,7 @@ EXTRA_SAFE = bool(_config.get('extra_safe', False))
 SHELL = str(_config.get('shell', '/bin/bash'))
 
 HOLD = _config.get('hold', dict())
-for (k, v)  in HOLD:
+for (k, v)  in HOLD.items():
     assert isinstance(k, str) and isinstance(v, str)
 
 IGNORED_PACNEW = _config.get('ignored_pacnew', list())

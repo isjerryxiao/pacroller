@@ -8,9 +8,9 @@
     "hold": {
         "linux": "(.*)",
         "python": "[0-9]+[.]([0-9]+)[.][0-9]+[-][0-9]+"
-    }
-    'ignored_pacnew': [
-        '/etc/locale.gen',
-        '/etc/pacman.d/mirrorlist'
+    },
+    "ignored_pacnew": [
+        "/etc/locale.gen",
+        "/etc/pacman.d/mirrorlist"
     ]
 }

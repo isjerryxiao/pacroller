@@ -68,8 +68,8 @@ class alpmCallback:
 
 def upgrade() -> List[str]:
     logger.info('upgrade start')
-    handle = pycman.config.init_with_config(PACMAN_CONFIG)
     pycman.config.cb_log = lambda *_: None
+    handle = pycman.config.init_with_config(PACMAN_CONFIG)
     localdb = handle.get_localdb()
     alpmCallback().setup_hdl(handle)
     t = handle.init_transaction()
@@ -77,6 +77,7 @@ def upgrade() -> List[str]:
         t.sysupgrade(False) # no downgrade
         if len(t.to_add) + len(t.to_remove) == 0:
             logger.info('upgrade end, nothing to do')
+            exit(0)
         else:
             def examine_upgrade(toadd: List[pyalpm.Package], toremove: List[pyalpm.Package]) -> None:
                 for pkg in toadd:
