@@ -5,7 +5,7 @@ import subprocess
 import logging
 from re import match
 import json
-from os import environ
+from os import environ, getuid
 import traceback
 import pyalpm
 import pycman
@@ -169,6 +169,8 @@ def main() -> None:
         logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 
     if args.action == 'run':
+        if getuid() != 0:
+            parser.error('you need to be root')
         if prev_err := has_previous_error():
             logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run fail-reset.')
         else:
@@ -199,6 +201,8 @@ def main() -> None:
                     break
                 print()
     elif args.action == 'fail-reset':
+        if getuid() != 0:
+            parser.error('you need to be root')
         if prev_err := has_previous_error():
             write_db(None)
             logger.info(f'reset previous error {prev_err}')
