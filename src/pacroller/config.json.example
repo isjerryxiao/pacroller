@@ -1,0 +1,16 @@
+{
+    "upgrade_timeout": 3600,
+    "network_retry": 5,
+    "custom_sync": false,
+    "sync_shell": "sync.sh",
+    "extra_safe": false,
+    "shell": "/bin/bash",
+    "hold": {
+        "linux": "(.*)",
+        "python": "[0-9]+[.]([0-9]+)[.][0-9]+[-][0-9]+"
+    }
+    'ignored_pacnew': [
+        '/etc/locale.gen',
+        '/etc/pacman.d/mirrorlist'
+    ]
+}
