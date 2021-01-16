@@ -1,0 +1,8 @@
+[Unit]
+Description=Unattended upgrade for archlinux
+After=network-online.target
+
+[Service]
+User=root
+Type=simple
+ExecStart=/usr/bin/pacroller run

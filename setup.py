@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Jerry Xiao",
     author_email="pacroller@mail.jerryxiao.cc",
-    description="unattended pacman upgrade for archlinux",
+    description="unattended upgrade for archlinux",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/isjerryxiao/pacroller",

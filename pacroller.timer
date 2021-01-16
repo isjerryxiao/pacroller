@@ -1,0 +1,9 @@
+[Unit]
+Description=Scheduled unattended upgrade for archlinux
+
+[Timer]
+OnCalendar=*-*-* 12:00:00
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target
