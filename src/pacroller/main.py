@@ -18,8 +18,6 @@ from pacroller.config import (CONFIG_DIR, CONFIG_FILE, LIB_DIR, DB_FILE, PACMAN_
 
 logger = logging.getLogger()
 
-environ['LANG'] = 'en_US.utf8' # required for parsing
-
 class NonFatal(Exception):
     pass
 class SyncRetry(NonFatal):
@@ -183,6 +181,23 @@ def is_system_failed() -> str:
         return ret
 
 def main() -> None:
+    def locale_set():
+        p = subprocess.run(['localectl', 'list-locales', '--no-pager'],
+                            stdin=subprocess.DEVNULL,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL,
+                            encoding='utf-8',
+                            timeout=20)
+        locales = [l.lower() for l in p.stdout.strip().split('\n')]
+        preferred = ['en_US.UTF-8', 'C.UTF-8']
+        for l in preferred:
+            if l.lower() in locales:
+                logger.debug(f'using locale {l}')
+                environ['LANG'] = l
+                break
+        else:
+            logger.debug('using fallback locale C')
+            environ['LANG'] = 'C'
     import argparse
     parser = argparse.ArgumentParser(description='Pacman Automatic Rolling Helper')
     parser.add_argument('action', choices=['run', 'status', 'fail-reset'])
@@ -194,6 +209,7 @@ def main() -> None:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s')
     else:
         logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+    locale_set()
 
     if args.action == 'run':
         if getuid() != 0:
