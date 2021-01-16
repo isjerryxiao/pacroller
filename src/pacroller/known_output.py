@@ -37,5 +37,8 @@ KNOWN_PACKAGE_OUTPUT = {
         *_keyring_output,
         r'gpg: marginals needed:.+ completes needed:.+ trust model: pgp',
         r'gpg: depth:.+ valid:.+ signed:.+ trust:.+, .+, .+, .+, .+, .+',
-    ]
+    ],
+    'brltty': [
+        r'Please add your user to the brlapi group\.',
+    ],
 }

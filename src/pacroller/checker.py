@@ -13,8 +13,7 @@ REGEX = {
     's_process_pkg_changes': r':: Processing package changes\.\.\.',
     's_post-transaction': r':: Running post-transaction hooks\.\.\.$',
     's_optdepend': r'(?i)(?:new )?optional dependencies for (.+)$',
-    's_optdepend_list': r'    (.+): (?:.+)',
-    's_upgrade_pkg': r'upgrading (.+)\.\.\.',
+    's_optdepend_list': r'    ([^:^ ]+).*',
     'l_running_hook': r'running \'(.+)\'\.\.\.',
     'l_transaction_start': r'transaction started',
     'l_transaction_complete': r'transaction completed',
@@ -141,11 +140,7 @@ def _stdout_parser(stdout: List[str], report: checkReport) -> None:
                         break
                 report.info(f'new optional dependencies for {pkg}: {", ".join(optdeps)}')
             else:
-                # then it should be upgrade message
-                if _m := REGEX['s_upgrade_pkg'].match(line):
-                    logger.debug(f's_upgrade_pkg {line=}')
-                else:
-                    logger.debug(f'stdout {line=} is unknown')
+                logger.debug(f'stdout {line=} is unknown')
         else:
             logger.debug(f'skip {line=}')
         ln += 1
@@ -241,7 +236,6 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                 continue
             logger.debug(f'.install start {pkg=}')
             while True:
-                ln += 1
                 line = log[ln]
                 (_, source, msg) = _split_log_line(line)
                 if source == 'ALPM-SCRIPTLET':
@@ -255,6 +249,7 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                     logger.debug(f'.install end {pkg=} {msg=}')
                     ln -= 1
                     break
+                ln += 1
         else:
             report.crit(f'{line=} has unknown source')
         ln += 1
