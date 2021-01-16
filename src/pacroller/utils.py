@@ -14,7 +14,7 @@ class UnknownQuestionError(subprocess.SubprocessError):
     def __str__(self):
         return f"Pacman returned an unknown question {self.question}"
 
-def execute_with_io(command: List[str]) -> List[str]:
+def execute_with_io(command: List[str], timeout: int = 3600) -> List[str]:
     '''
         captures stdout and stderr and
         automatically handles [y/n] questions of pacman
@@ -41,7 +41,7 @@ def execute_with_io(command: List[str]) -> List[str]:
             stderr=subprocess.STDOUT,
             encoding='utf-8'
         )
-    Thread(target=set_timeout, args=(p, 3600), daemon=True).start() # should be configurable
+    Thread(target=set_timeout, args=(p, timeout), daemon=True).start() # should be configurable
     line = ''
     output = ''
     while (r := p.stdout.read(1)) != '':

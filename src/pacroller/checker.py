@@ -145,7 +145,7 @@ def _stdout_parser(stdout: List[str], report: checkReport) -> None:
                 if _m := REGEX['s_upgrade_pkg'].match(line):
                     logger.debug(f's_upgrade_pkg {line=}')
                 else:
-                    report.crit(f'{line=} is unknown')
+                    logger.debug(f'stdout {line=} is unknown')
         else:
             logger.debug(f'skip {line=}')
         ln += 1

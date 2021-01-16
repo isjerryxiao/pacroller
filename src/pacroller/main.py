@@ -13,7 +13,8 @@ from typing import List, Iterator
 from pacroller.utils import execute_with_io, UnknownQuestionError, back_readline
 from pacroller.checker import log_checker, sync_err_is_net, upgrade_err_is_net, checkReport
 from pacroller.config import (CONFIG_DIR, CONFIG_FILE, LIB_DIR, DB_FILE, PACMAN_LOG, PACMAN_CONFIG,
-                              UPGRADE_TIMEOUT, NETWORK_RETRY, CUSTOM_SYNC, SYNC_SH, EXTRA_SAFE, SHELL, HOLD)
+                              TIMEOUT, UPGRADE_TIMEOUT, NETWORK_RETRY, CUSTOM_SYNC, SYNC_SH,
+                              EXTRA_SAFE, SHELL, HOLD, NEEDRESTART, NEEDRESTART_CMD, SYSTEMD)
 
 logger = logging.getLogger()
 
@@ -29,6 +30,10 @@ class PackageHold(Exception):
     pass
 class CheckFailed(Exception):
     pass
+class NeedrestartFailed(Exception):
+    pass
+class SystemdNotRunning(Exception):
+    pass
 
 def sync() -> None:
     logger.info('sync start')
@@ -43,7 +48,7 @@ def sync() -> None:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding='utf-8',
-            timeout=300
+            timeout=TIMEOUT
         )
     except subprocess.CalledProcessError as e:
         if sync_err_is_net(e.output):
@@ -99,7 +104,7 @@ def upgrade() -> List[str]:
             examine_upgrade(t.to_add, t.to_remove)
     finally:
         t.release()
-    pacman_output = execute_with_io(['pacman', '-Su', '--noprogressbar', '--color', 'never'])
+    pacman_output = execute_with_io(['pacman', '-Su', '--noprogressbar', '--color', 'never'], UPGRADE_TIMEOUT)
     logger.info('upgrade end')
     return pacman_output
 
@@ -132,7 +137,13 @@ def do_system_upgrade(debug=False) -> checkReport:
     with open(PACMAN_LOG, 'r') as pacman_log:
         pacman_log.seek(log_anchor)
         log = pacman_log.read().split('\n')
-    report = log_checker(stdout, log, debug=debug)
+    try:
+        report = log_checker(stdout, log, debug=debug)
+    except Exception:
+        logger.exception('checker has crashed, here is the debug info')
+        _report = log_checker(stdout, log, debug=True)
+        raise
+
     logger.info(report.summary(verbose=True, show_package=False))
     return report
 
@@ -156,6 +167,21 @@ def has_previous_error() -> Exception:
     else:
         return None
 
+def is_system_failed() -> str:
+    try:
+        p = subprocess.run(["systemctl", "is-system-running"],
+                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                        stdin=subprocess.DEVNULL,
+                        timeout=20, encoding='utf-8')
+    except Exception:
+        ret = "exec fail"
+    else:
+        ret = p.stdout.strip()
+    if ret == 'running':
+        return None
+    else:
+        return ret
+
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description='Pacman Automatic Rolling Helper')
@@ -171,7 +197,12 @@ def main() -> None:
 
     if args.action == 'run':
         if getuid() != 0:
-            parser.error('you need to be root')
+            logger.error('you need to be root')
+            exit(1)
+        if SYSTEMD:
+            if _s := is_system_failed():
+                logger.error(f'systemd is not in {_s} state, refused')
+                exit(11)
         if prev_err := has_previous_error():
             logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run fail-reset.')
         else:
@@ -190,7 +221,28 @@ def main() -> None:
                 else:
                     if report._warn or report._crit:
                         exc = CheckFailed('manual inspection required')
+                if exc:
+                    write_db(report, exc)
+                    exit(2)
+                if NEEDRESTART:
+                    try:
+                        p = subprocess.run(
+                            NEEDRESTART_CMD,
+                            stdin=subprocess.DEVNULL,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            encoding='utf-8',
+                            timeout=TIMEOUT
+                        )
+                    except subprocess.CalledProcessError as e:
+                        logger.error(f'needrestart failed with {e.returncode=} {e.output=}')
+                        exc = NeedrestartFailed(f'{e.returncode=}')
+                    else:
+                        logger.debug(f'needrestart {p.stdout=}')
                 write_db(report, exc)
+                if exc:
+                    exit(2)
+
     elif args.action == 'status':
         count = 0
         for entry in read_db():
@@ -202,8 +254,13 @@ def main() -> None:
                     break
                 print()
     elif args.action == 'fail-reset':
+        if SYSTEMD:
+            if _s := is_system_failed():
+                logger.error(f'systemd is not in {_s} state, refused')
+                exit(11)
         if getuid() != 0:
-            parser.error('you need to be root')
+            logger.error('you need to be root')
+            exit(1)
         if prev_err := has_previous_error():
             write_db(None)
             logger.info(f'reset previous error {prev_err}')

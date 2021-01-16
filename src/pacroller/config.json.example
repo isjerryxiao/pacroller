@@ -1,4 +1,5 @@
 {
+    "timeout": 300,
     "upgrade_timeout": 3600,
     "network_retry": 5,
     "custom_sync": false,
@@ -12,5 +13,8 @@
     "ignored_pacnew": [
         "/etc/locale.gen",
         "/etc/pacman.d/mirrorlist"
-    ]
+    ],
+    "need_restart": false,
+    "need_restart_cmd": ["needrestart", "-r", "a", "-m", "a", "-l"],
+    "systemd-check": true
 }
