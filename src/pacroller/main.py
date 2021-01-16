@@ -30,8 +30,6 @@ class CheckFailed(Exception):
     pass
 class NeedrestartFailed(Exception):
     pass
-class SystemdNotRunning(Exception):
-    pass
 
 def sync() -> None:
     logger.info('sync start')
@@ -217,7 +215,7 @@ def main() -> None:
             exit(1)
         if SYSTEMD:
             if _s := is_system_failed():
-                logger.error(f'systemd is not in {_s} state, refused')
+                logger.error(f'systemd is in {_s} state, refused')
                 exit(11)
         if prev_err := has_previous_error():
             logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run fail-reset.')
@@ -237,8 +235,8 @@ def main() -> None:
                 else:
                     if report._warn or report._crit:
                         exc = CheckFailed('manual inspection required')
+                write_db(report, exc)
                 if exc:
-                    write_db(report, exc)
                     exit(2)
                 if NEEDRESTART:
                     try:
@@ -253,11 +251,10 @@ def main() -> None:
                     except subprocess.CalledProcessError as e:
                         logger.error(f'needrestart failed with {e.returncode=} {e.output=}')
                         exc = NeedrestartFailed(f'{e.returncode=}')
+                        write_db(None, exc)
+                        exit(2)
                     else:
                         logger.debug(f'needrestart {p.stdout=}')
-                write_db(report, exc)
-                if exc:
-                    exit(2)
 
     elif args.action == 'status':
         count = 0
@@ -272,7 +269,7 @@ def main() -> None:
     elif args.action == 'fail-reset':
         if SYSTEMD:
             if _s := is_system_failed():
-                logger.error(f'systemd is not in {_s} state, refused')
+                logger.error(f'systemd is in {_s} state, refused')
                 exit(11)
         if getuid() != 0:
             logger.error('you need to be root')
