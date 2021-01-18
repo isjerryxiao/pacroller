@@ -253,10 +253,15 @@ def main() -> None:
         count = 0
         failed = False
         for entry in read_db():
+            if e := entry.get('error'):
+                print(e)
+                failed = True
+            break
+        for entry in read_db():
             if report_dict := entry.get('report'):
                 count += 1
                 report = checkReport(**report_dict)
-                if count == 1:
+                if not failed and count == 1:
                     failed = report.failed
                 print(report.summary(verbose=args.verbose, show_package=True))
                 if count >= args.max and args.max > 0:
