@@ -213,12 +213,12 @@ def main() -> None:
         if getuid() != 0:
             logger.error('you need to be root')
             exit(1)
+        if prev_err := has_previous_error():
+            logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run fail-reset.')
         if SYSTEMD:
             if _s := is_system_failed():
                 logger.error(f'systemd is in {_s} state, refused')
                 exit(11)
-        if prev_err := has_previous_error():
-            logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run fail-reset.')
         else:
             try:
                 report = do_system_upgrade(args.debug)
@@ -228,13 +228,7 @@ def main() -> None:
                 write_db(None, e)
                 raise
             else:
-                exc = None
-                if EXTRA_SAFE:
-                    if report._info or report._warn or report._crit:
-                        exc = CheckFailed('manual inspection required')
-                else:
-                    if report._warn or report._crit:
-                        exc = CheckFailed('manual inspection required')
+                exc = CheckFailed('manual inspection required') if report.failed else None
                 write_db(report, exc)
                 if exc:
                     exit(2)
@@ -250,30 +244,46 @@ def main() -> None:
                         )
                     except subprocess.CalledProcessError as e:
                         logger.error(f'needrestart failed with {e.returncode=} {e.output=}')
-                        exc = NeedrestartFailed(f'{e.returncode=}')
-                        write_db(None, exc)
+                        write_db(None, NeedrestartFailed(f'{e.returncode=}'))
                         exit(2)
                     else:
                         logger.debug(f'needrestart {p.stdout=}')
 
     elif args.action == 'status':
         count = 0
+        failed = False
         for entry in read_db():
             if report_dict := entry.get('report'):
                 count += 1
                 report = checkReport(**report_dict)
+                if count == 1:
+                    failed = report.failed
                 print(report.summary(verbose=args.verbose, show_package=True))
-                if count >= args.max:
+                if count >= args.max and args.max > 0:
                     break
                 print()
+        if failed:
+            exit(2)
     elif args.action == 'fail-reset':
+        if getuid() != 0:
+            logger.error('you need to be root')
+            exit(1)
+        try:
+            subprocess.run(["systemctl", "is-failed", "pacroller"],
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        encoding='utf-8',
+                        timeout=20
+            )
+        except subprocess.CalledProcessError:
+            pass
+        else:
+            subprocess.run(["systemctl", "reset-failed", "pacroller"], timeout=20)
         if SYSTEMD:
             if _s := is_system_failed():
                 logger.error(f'systemd is in {_s} state, refused')
                 exit(11)
-        if getuid() != 0:
-            logger.error('you need to be root')
-            exit(1)
         if prev_err := has_previous_error():
             write_db(None)
             logger.info(f'reset previous error {prev_err}')

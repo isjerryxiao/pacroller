@@ -35,6 +35,15 @@ class checkReport:
         self._crit = crit or list()
         self._changes = changes or list()
         self._date = date
+    @property
+    def failed(self, extra_safe: bool = False) -> bool:
+        if extra_safe:
+            if self._info or self._warn or self._crit:
+                return True
+        else:
+            if self._warn or self._crit:
+                return True
+        return False
     def to_dict(self) -> dict:
         return {'info': self._info, 'warn': self._warn, 'crit': self._crit, 'changes': self._changes, 'date': self._date}
     def summary(self, verbose=True, show_package=False, indent=2) -> str:
