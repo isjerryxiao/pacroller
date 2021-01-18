@@ -44,7 +44,8 @@ def sync() -> None:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding='utf-8',
-            timeout=TIMEOUT
+            timeout=TIMEOUT,
+            check=True
         )
     except subprocess.CalledProcessError as e:
         if sync_err_is_net(e.output):
@@ -166,9 +167,13 @@ def has_previous_error() -> Exception:
 def is_system_failed() -> str:
     try:
         p = subprocess.run(["systemctl", "is-system-running"],
-                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
                         stdin=subprocess.DEVNULL,
-                        timeout=20, encoding='utf-8')
+                        timeout=20,
+                        encoding='utf-8',
+                        check=False
+        )
     except Exception:
         ret = "exec fail"
     else:
@@ -185,7 +190,9 @@ def main() -> None:
                             stdout=subprocess.PIPE,
                             stderr=subprocess.DEVNULL,
                             encoding='utf-8',
-                            timeout=20)
+                            timeout=20,
+                            check=True
+        )
         locales = [l.lower() for l in p.stdout.strip().split('\n')]
         preferred = ['en_US.UTF-8', 'C.UTF-8']
         for l in preferred:
@@ -240,7 +247,8 @@ def main() -> None:
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         encoding='utf-8',
-                        timeout=TIMEOUT
+                        timeout=TIMEOUT,
+                        check=True
                     )
                 except subprocess.CalledProcessError as e:
                     logger.error(f'needrestart failed with {e.returncode=} {e.output=}')
@@ -279,12 +287,13 @@ def main() -> None:
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
                         encoding='utf-8',
-                        timeout=20
+                        timeout=20,
+                        check=True
             )
         except subprocess.CalledProcessError:
             pass
         else:
-            subprocess.run(["systemctl", "reset-failed", "pacroller"], timeout=20)
+            subprocess.run(["systemctl", "reset-failed", "pacroller"], timeout=20, check=True)
         if SYSTEMD:
             if _s := is_system_failed():
                 logger.error(f'systemd is in {_s} state, refused')
