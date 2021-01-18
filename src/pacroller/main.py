@@ -215,39 +215,39 @@ def main() -> None:
             exit(1)
         if prev_err := has_previous_error():
             logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run fail-reset.')
+            exit(2)
         if SYSTEMD:
             if _s := is_system_failed():
                 logger.error(f'systemd is in {_s} state, refused')
                 exit(11)
+        try:
+            report = do_system_upgrade(args.debug)
+        except NonFatal:
+            raise
+        except Exception as e:
+            write_db(None, e)
+            raise
         else:
-            try:
-                report = do_system_upgrade(args.debug)
-            except NonFatal:
-                raise
-            except Exception as e:
-                write_db(None, e)
-                raise
-            else:
-                exc = CheckFailed('manual inspection required') if report.failed else None
-                write_db(report, exc)
-                if exc:
+            exc = CheckFailed('manual inspection required') if report.failed else None
+            write_db(report, exc)
+            if exc:
+                exit(2)
+            if NEEDRESTART:
+                try:
+                    p = subprocess.run(
+                        NEEDRESTART_CMD,
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        encoding='utf-8',
+                        timeout=TIMEOUT
+                    )
+                except subprocess.CalledProcessError as e:
+                    logger.error(f'needrestart failed with {e.returncode=} {e.output=}')
+                    write_db(None, NeedrestartFailed(f'{e.returncode=}'))
                     exit(2)
-                if NEEDRESTART:
-                    try:
-                        p = subprocess.run(
-                            NEEDRESTART_CMD,
-                            stdin=subprocess.DEVNULL,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT,
-                            encoding='utf-8',
-                            timeout=TIMEOUT
-                        )
-                    except subprocess.CalledProcessError as e:
-                        logger.error(f'needrestart failed with {e.returncode=} {e.output=}')
-                        write_db(None, NeedrestartFailed(f'{e.returncode=}'))
-                        exit(2)
-                    else:
-                        logger.debug(f'needrestart {p.stdout=}')
+                else:
+                    logger.debug(f'needrestart {p.stdout=}')
 
     elif args.action == 'status':
         count = 0
