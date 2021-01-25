@@ -184,7 +184,7 @@ def is_system_failed() -> str:
         return ret
 
 def main() -> None:
-    def locale_set():
+    def locale_set() -> None:
         p = subprocess.run(['localectl', 'list-locales', '--no-pager'],
                             stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE,
@@ -203,6 +203,25 @@ def main() -> None:
         else:
             logger.debug('using fallback locale C')
             environ['LANG'] = 'C'
+    def run_needrestart(ignore_error=False) -> None:
+        logger.debug('running needrestart')
+        try:
+            p = subprocess.run(
+                NEEDRESTART_CMD,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                encoding='utf-8',
+                timeout=TIMEOUT,
+                check=True
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error(f'needrestart failed with {e.returncode=} {e.output=}')
+            if not ignore_error:
+                write_db(None, NeedrestartFailed(f'{e.returncode=}'))
+            exit(2)
+        else:
+            logger.debug(f'needrestart {p.stdout=}')
     import argparse
     parser = argparse.ArgumentParser(description='Pacman Automatic Rolling Helper')
     parser.add_argument('action', choices=['run', 'status', 'fail-reset'])
@@ -240,22 +259,7 @@ def main() -> None:
             if exc:
                 exit(2)
             if NEEDRESTART:
-                try:
-                    p = subprocess.run(
-                        NEEDRESTART_CMD,
-                        stdin=subprocess.DEVNULL,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        encoding='utf-8',
-                        timeout=TIMEOUT,
-                        check=True
-                    )
-                except subprocess.CalledProcessError as e:
-                    logger.error(f'needrestart failed with {e.returncode=} {e.output=}')
-                    write_db(None, NeedrestartFailed(f'{e.returncode=}'))
-                    exit(2)
-                else:
-                    logger.debug(f'needrestart {p.stdout=}')
+                run_needrestart()
 
     elif args.action == 'status':
         count = 0
@@ -301,6 +305,8 @@ def main() -> None:
         if prev_err := has_previous_error():
             write_db(None)
             logger.info(f'reset previous error {prev_err}')
+            if NEEDRESTART:
+                run_needrestart(True)
         else:
             logger.warning('nothing to do')
 
