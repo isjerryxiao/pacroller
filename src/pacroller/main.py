@@ -14,7 +14,8 @@ from pacroller.utils import execute_with_io, UnknownQuestionError, back_readline
 from pacroller.checker import log_checker, sync_err_is_net, upgrade_err_is_net, checkReport
 from pacroller.config import (CONFIG_DIR, CONFIG_FILE, LIB_DIR, DB_FILE, PACMAN_LOG, PACMAN_CONFIG,
                               TIMEOUT, UPGRADE_TIMEOUT, NETWORK_RETRY, CUSTOM_SYNC, SYNC_SH,
-                              EXTRA_SAFE, SHELL, HOLD, NEEDRESTART, NEEDRESTART_CMD, SYSTEMD)
+                              EXTRA_SAFE, SHELL, HOLD, NEEDRESTART, NEEDRESTART_CMD, SYSTEMD,
+                              PACMAN_PKG_DIR, PACMAN_SCC)
 
 logger = logging.getLogger()
 
@@ -203,6 +204,11 @@ def main() -> None:
         else:
             logger.debug('using fallback locale C')
             environ['LANG'] = 'C'
+    def clear_pkg_cache() -> None:
+        logger.debug('clearing package cache')
+        for i in Path(PACMAN_PKG_DIR).iterdir():
+            if i.is_file():
+                i.unlink()
     def run_needrestart(ignore_error=False) -> None:
         logger.debug('running needrestart')
         try:
@@ -260,6 +266,8 @@ def main() -> None:
                 exit(2)
             if NEEDRESTART:
                 run_needrestart()
+            if PACMAN_SCC:
+                clear_pkg_cache()
 
     elif args.action == 'status':
         count = 0
@@ -307,6 +315,8 @@ def main() -> None:
             logger.info(f'reset previous error {prev_err}')
             if NEEDRESTART:
                 run_needrestart(True)
+            if PACMAN_SCC:
+                clear_pkg_cache()
         else:
             logger.warning('nothing to do')
 

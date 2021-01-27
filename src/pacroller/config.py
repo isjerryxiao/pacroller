@@ -7,6 +7,7 @@ LIB_DIR = Path('/var/lib/pacroller')
 DB_FILE = 'db'
 PACMAN_CONFIG = '/etc/pacman.conf'
 PACMAN_LOG = '/var/log/pacman.log'
+PACMAN_PKG_DIR = '/var/cache/pacman/pkg'
 assert LIB_DIR.is_dir()
 
 if (cfg := (CONFIG_DIR / CONFIG_FILE)).exists():
@@ -41,3 +42,4 @@ for i in NEEDRESTART_CMD:
     assert isinstance(i, str)
 
 SYSTEMD = bool(_config.get('systemd-check', True))
+PACMAN_SCC = bool(_config.get('clear_pkg_cache', False))

@@ -16,5 +16,6 @@
     ],
     "need_restart": false,
     "need_restart_cmd": ["needrestart", "-r", "a", "-m", "a", "-l"],
-    "systemd-check": true
+    "systemd-check": true,
+    "clear_pkg_cache": false
 }
