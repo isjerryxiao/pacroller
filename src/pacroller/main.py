@@ -15,7 +15,7 @@ from pacroller.checker import log_checker, sync_err_is_net, upgrade_err_is_net, 
 from pacroller.config import (CONFIG_DIR, CONFIG_FILE, LIB_DIR, DB_FILE, PACMAN_LOG, PACMAN_CONFIG,
                               TIMEOUT, UPGRADE_TIMEOUT, NETWORK_RETRY, CUSTOM_SYNC, SYNC_SH,
                               EXTRA_SAFE, SHELL, HOLD, NEEDRESTART, NEEDRESTART_CMD, SYSTEMD,
-                              PACMAN_PKG_DIR, PACMAN_SCC)
+                              PACMAN_PKG_DIR, PACMAN_SCC, PACMAN_DB_LCK)
 
 logger = logging.getLogger()
 
@@ -55,6 +55,12 @@ def sync() -> None:
         else:
             logger.exception(f'sync failed with {e.returncode=} {e.output=}')
             raise
+    except subprocess.TimeoutExpired as e:
+        logger.warning('database download timeout {e.timeout=} {e.output=}')
+        if PACMAN_DB_LCK.exists():
+            logger.warning(f'automatically removing {PACMAN_DB_LCK}')
+            Path(PACMAN_DB_LCK).unlink()
+        raise SyncRetry()
     else:
         logger.debug(f'sync {p.stdout=}')
         logger.info('sync end')
@@ -252,6 +258,9 @@ def main() -> None:
             if _s := is_system_failed():
                 logger.error(f'systemd is in {_s} state, refused')
                 exit(11)
+        if Path(PACMAN_DB_LCK).exists():
+            logger.error(f'Database is locked at {PACMAN_DB_LCK}')
+            exit(2)
         try:
             report = do_system_upgrade(args.debug)
         except NonFatal:

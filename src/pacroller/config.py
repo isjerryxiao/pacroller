@@ -8,6 +8,7 @@ DB_FILE = 'db'
 PACMAN_CONFIG = '/etc/pacman.conf'
 PACMAN_LOG = '/var/log/pacman.log'
 PACMAN_PKG_DIR = '/var/cache/pacman/pkg'
+PACMAN_DB_LCK = '/var/lib/pacman/db.lck'
 assert LIB_DIR.is_dir()
 
 if (cfg := (CONFIG_DIR / CONFIG_FILE)).exists():
