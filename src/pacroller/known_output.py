@@ -41,4 +41,9 @@ KNOWN_PACKAGE_OUTPUT = {
     'brltty': [
         r'Please add your user to the brlapi group\.',
     ],
+    'glibc': [
+        r'Generating locales\.\.\.',
+        r'Generation complete\.',
+        r'  .*_.*\.\.\. done',
+    ],
 }
