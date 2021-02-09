@@ -57,7 +57,7 @@ def sync() -> None:
             raise
     except subprocess.TimeoutExpired as e:
         logger.warning('database download timeout {e.timeout=} {e.output=}')
-        if PACMAN_DB_LCK.exists():
+        if Path(PACMAN_DB_LCK).exists():
             logger.warning(f'automatically removing {PACMAN_DB_LCK}')
             Path(PACMAN_DB_LCK).unlink()
         raise SyncRetry()
