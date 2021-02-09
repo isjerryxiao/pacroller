@@ -1,3 +1,6 @@
+from pacroller.config import KNOWN_OUTPUT_OVERRIDE
+KNOWN_HOOK_OUTPUT_OVERRIDE, KNOWN_PACKAGE_OUTPUT_OVERRIDE = KNOWN_OUTPUT_OVERRIDE
+
 KNOWN_HOOK_OUTPUT = {
     '': [],
     '20-systemd-sysusers.hook': [
@@ -15,7 +18,8 @@ KNOWN_HOOK_OUTPUT = {
         r'==> Creating (?:.+)-compressed initcpio image: .+',
         r'==> Image generation successful.*',
         r'[ ]+-> .+',
-    ]
+    ],
+    **KNOWN_HOOK_OUTPUT_OVERRIDE
 }
 
 _keyring_output = [
@@ -46,4 +50,5 @@ KNOWN_PACKAGE_OUTPUT = {
         r'Generation complete\.',
         r'  .*_.*\.\.\. done',
     ],
+    **KNOWN_PACKAGE_OUTPUT_OVERRIDE
 }
