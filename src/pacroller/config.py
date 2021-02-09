@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-import sys
 import importlib.util
 from typing import Any
 
