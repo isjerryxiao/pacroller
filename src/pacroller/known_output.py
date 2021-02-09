@@ -15,6 +15,12 @@ KNOWN_HOOK_OUTPUT = {
         r'==> Creating (?:.+)-compressed initcpio image: .+',
         r'==> Image generation successful.*',
         r'[ ]+-> .+',
+    ],
+    '00_snapper-pre.hook': [
+        r'==> .*: .*',
+    ],
+    'zy_snapper-post.hook': [
+        r'==> .*: .*',
     ]
 }
 
