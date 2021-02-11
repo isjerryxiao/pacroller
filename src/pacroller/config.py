@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import importlib.util
+import sys
 from typing import Any
 
 CONFIG_DIR = Path('/etc/pacroller')
@@ -19,13 +20,16 @@ if (cfg := (CONFIG_DIR / CONFIG_FILE)).exists():
 else:
     _config = dict()
 
-def _import_module(fpath: str) -> Any:
-    spec = importlib.util.spec_from_file_location(fpath.removesuffix('.py').replace('/', '.'), fpath)
+def _import_module(fpath: Path) -> Any:
+    spec = importlib.util.spec_from_file_location(str(fpath).removesuffix('.py').replace('/', '.'), fpath)
     mod = importlib.util.module_from_spec(spec)
+    _wbc = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
     spec.loader.exec_module(mod)
+    sys.dont_write_bytecode = _wbc
     return mod
 if (_komf := (CONFIG_DIR / F_KNOWN_OUTPUT_OVERRIDE)).exists():
-    _kom = _import_module(str(_komf.resolve()))
+    _kom = _import_module(_komf.resolve())
     KNOWN_OUTPUT_OVERRIDE = (_kom.KNOWN_HOOK_OUTPUT, _kom.KNOWN_PACKAGE_OUTPUT)
 else:
     KNOWN_OUTPUT_OVERRIDE = (dict(), dict())
