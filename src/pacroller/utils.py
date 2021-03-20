@@ -5,6 +5,7 @@ from typing import List, BinaryIO, Iterator
 from io import DEFAULT_BUFFER_SIZE
 from time import mktime
 from datetime import datetime
+from signal import SIGINT, SIGTERM, Signals
 logger = logging.getLogger()
 
 class UnknownQuestionError(subprocess.SubprocessError):
@@ -19,8 +20,8 @@ def execute_with_io(command: List[str], timeout: int = 3600) -> List[str]:
         captures stdout and stderr and
         automatically handles [y/n] questions of pacman
     '''
-    def terminate(p: subprocess.Popen, timeout: int = 30) -> None:
-        p.terminate()
+    def terminate(p: subprocess.Popen, timeout: int = 30, signal: Signals = SIGTERM) -> None:
+        p.send_signal(signal)
         try:
             p.wait(timeout=30)
         except subprocess.TimeoutExpired:
@@ -55,7 +56,7 @@ def execute_with_io(command: List[str], timeout: int = 3600) -> List[str]:
                 p.stdin.write('y\n')
                 p.stdin.flush()
             elif line.lower().endswith('[y/n]'):
-                terminate(p)
+                terminate(p, signal=SIGINT)
                 raise UnknownQuestionError(line, output)
 
     if (ret := p.wait()) != 0:

@@ -165,7 +165,7 @@ def read_db() -> Iterator[dict]:
                 entry = json.loads(line)
                 yield entry
 
-def has_previous_error() -> Exception:
+def has_previous_error() -> str:
     for entry in read_db():
         return entry.get('error')
     else:
