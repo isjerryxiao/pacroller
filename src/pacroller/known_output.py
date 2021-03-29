@@ -50,5 +50,8 @@ KNOWN_PACKAGE_OUTPUT = {
         r'Generation complete\.',
         r'  .*_.*\.\.\. done',
     ],
+    'fontconfig': [
+        r'Rebuilding fontconfig cache\.\.\.',
+    ],
     **KNOWN_PACKAGE_OUTPUT_OVERRIDE
 }
