@@ -6,6 +6,8 @@ from io import DEFAULT_BUFFER_SIZE
 from time import mktime
 from datetime import datetime
 from signal import SIGINT, SIGTERM, Signals
+from select import select
+from sys import stdin
 logger = logging.getLogger()
 
 class UnknownQuestionError(subprocess.SubprocessError):
@@ -15,7 +17,7 @@ class UnknownQuestionError(subprocess.SubprocessError):
     def __str__(self):
         return f"Pacman returned an unknown question {self.question}"
 
-def execute_with_io(command: List[str], timeout: int = 3600) -> List[str]:
+def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool = False) -> List[str]:
     '''
         captures stdout and stderr and
         automatically handles [y/n] questions of pacman
@@ -42,23 +44,50 @@ def execute_with_io(command: List[str], timeout: int = 3600) -> List[str]:
             stderr=subprocess.STDOUT,
             encoding='utf-8'
         )
-    Thread(target=set_timeout, args=(p, timeout), daemon=True).start() # should be configurable
-    line = ''
-    output = ''
-    while (r := p.stdout.read(1)) != '':
-        output += r
-        line += r
-        if r == '\n':
-            logger.debug('STDOUT: %s', line[:-1])
-            line = ''
-        elif r == ']':
-            if line == ':: Proceed with installation? [Y/n]':
-                p.stdin.write('y\n')
-                p.stdin.flush()
-            elif line.lower().endswith('[y/n]'):
-                terminate(p, signal=SIGINT)
-                raise UnknownQuestionError(line, output)
-
+    try:
+        Thread(target=set_timeout, args=(p, timeout), daemon=True).start()
+        line = ''
+        output = ''
+        while (r := p.stdout.read(1)) != '':
+            output += r
+            line += r
+            if r == '\n':
+                logger.debug('STDOUT: %s', line[:-1])
+                line = ''
+            elif r == ']':
+                if line == ':: Proceed with installation? [Y/n]':
+                    p.stdin.write('y\n')
+                    p.stdin.flush()
+                elif line.lower().endswith('[y/n]'):
+                    if interactive:
+                        print(f"Please answer this question in 60 seconds:\n{line}", end=' ', flush=True)
+                        while True:
+                            read_ready, _, _ = select([stdin], list(), list(), 60)
+                            if not read_ready:
+                                terminate(p, signal=SIGINT)
+                                raise UnknownQuestionError(line, output)
+                            choice = read_ready[0].readline().strip()
+                            if choice.lower().startswith('y'):
+                                p.stdin.write('y\n')
+                                p.stdin.flush()
+                                break
+                            elif choice.lower().startswith('n'):
+                                p.stdin.write('n\n')
+                                p.stdin.flush()
+                                break
+                            else:
+                                if choice.lower().startswith('s'):
+                                    print(output)
+                                print("Please give an explicit answer [Y]es [N]o [S]how", end=' ', flush=True)
+                    else:
+                        terminate(p, signal=SIGINT)
+                        raise UnknownQuestionError(line, output)
+    except KeyboardInterrupt:
+        terminate(p, signal=SIGINT)
+        raise
+    except Exception:
+        terminate(p)
+        raise
     if (ret := p.wait()) != 0:
         raise subprocess.CalledProcessError(ret, command, output)
     return output.split('\n')

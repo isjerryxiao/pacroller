@@ -5,7 +5,7 @@ import subprocess
 import logging
 from re import match
 import json
-from os import environ, getuid
+from os import environ, getuid, isatty
 import traceback
 import pyalpm
 import pycman
@@ -75,7 +75,7 @@ class alpmCallback:
         handle.questioncb = self.noop
         handle.progresscb = self.noop
 
-def upgrade() -> List[str]:
+def upgrade(interactive=False) -> List[str]:
     logger.info('upgrade start')
     pycman.config.cb_log = lambda *_: None
     handle = pycman.config.init_with_config(PACMAN_CONFIG)
@@ -108,11 +108,11 @@ def upgrade() -> List[str]:
             examine_upgrade(t.to_add, t.to_remove)
     finally:
         t.release()
-    pacman_output = execute_with_io(['pacman', '-Su', '--noprogressbar', '--color', 'never'], UPGRADE_TIMEOUT)
+    pacman_output = execute_with_io(['pacman', '-Su', '--noprogressbar', '--color', 'never'], UPGRADE_TIMEOUT, interactive=interactive)
     logger.info('upgrade end')
     return pacman_output
 
-def do_system_upgrade(debug=False) -> checkReport:
+def do_system_upgrade(debug=False, interactive=False) -> checkReport:
     for _ in range(NETWORK_RETRY):
         try:
             sync()
@@ -127,7 +127,7 @@ def do_system_upgrade(debug=False) -> checkReport:
         try:
             with open(PACMAN_LOG, 'r') as pacman_log:
                 log_anchor = pacman_log.seek(0, 2)
-            stdout = upgrade()
+            stdout = upgrade(interactive=interactive)
         except subprocess.CalledProcessError as e:
             if upgrade_err_is_net(e.output):
                 logger.warning('upgrade download failed')
@@ -240,12 +240,15 @@ def main() -> None:
     parser.add_argument('-d', '--debug', action='store_true', help='enable debug mode')
     parser.add_argument('-v', '--verbose', action='store_true', help='show verbose report')
     parser.add_argument('-m', '--max', type=int, default=1, help='Number of upgrades to show')
+    parser.add_argument('-i', '--interactive', choices=['auto', 'on', 'off'], default='auto', help='allow interactive questions')
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s')
     else:
         logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
     locale_set()
+    interactive = args.interactive == "on" or not (args.interactive == 'off' or not isatty(0))
+    logger.debug(f"interactive questions {'enabled' if interactive else 'disabled'}")
 
     if args.action == 'run':
         if getuid() != 0:
@@ -262,7 +265,7 @@ def main() -> None:
             logger.error(f'Database is locked at {PACMAN_DB_LCK}')
             exit(2)
         try:
-            report = do_system_upgrade(args.debug)
+            report = do_system_upgrade(debug=args.debug, interactive=interactive)
         except NonFatal:
             raise
         except Exception as e:
