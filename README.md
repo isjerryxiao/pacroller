@@ -33,12 +33,12 @@ If the "needrestart" option is enabled, needrestart should be called after a suc
 Put your hold packages in a json keyval {package name: regex}, where the regex should have at least one matching group.  
 If pacroller observes any changes of the matching group or the hold package is to be removed, it refuses to upgrade further.  
 ### ignored pacnew
-A list of pacnew files that are silently ignored during parsing, any other pacnews will trigger a waring and prevent further upgrades.  
+A list of pacnew files that are silently ignored during parsing, any other pacnews will trigger a warning and prevent further upgrades.  
 ### custom pacman hooks and packages
 Custom pacman hooks and packages output matching is configurable via `/etc/pacroller/known_output_override.py`.
 
 ## Limitations
-- Dracut is not supported, however it's easy to add another set of rules.
+- Your favourite package may not be supported, however it's easy to add another set of rules.
 - Restarting the whole system after a kernel upgrade is not implemented.
 - Human interaction is required occasionally.
 - Does not check news from archlinux.org
