@@ -5,5 +5,5 @@ After=network-online.target
 [Service]
 User=root
 Type=simple
-ExecStart=/usr/bin/systemd-inhibit /usr/bin/pacroller run
+ExecStart=/usr/bin/systemd-inhibit --who="pacroller" --why="Running unattended upgrade" /usr/bin/pacroller run
 SyslogIdentifier=pacroller
