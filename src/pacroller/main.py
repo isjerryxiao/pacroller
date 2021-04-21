@@ -7,15 +7,16 @@ from re import match
 import json
 from os import environ, getuid, isatty
 import traceback
+from datetime import datetime
 import pyalpm
 import pycman
 from typing import List, Iterator
-from pacroller.utils import execute_with_io, UnknownQuestionError, back_readline
+from pacroller.utils import execute_with_io, UnknownQuestionError, back_readline, ask_interactive_question
 from pacroller.checker import log_checker, sync_err_is_net, upgrade_err_is_net, checkReport
 from pacroller.config import (CONFIG_DIR, CONFIG_FILE, LIB_DIR, DB_FILE, PACMAN_LOG, PACMAN_CONFIG,
                               TIMEOUT, UPGRADE_TIMEOUT, NETWORK_RETRY, CUSTOM_SYNC, SYNC_SH,
                               EXTRA_SAFE, SHELL, HOLD, NEEDRESTART, NEEDRESTART_CMD, SYSTEMD,
-                              PACMAN_PKG_DIR, PACMAN_SCC, PACMAN_DB_LCK)
+                              PACMAN_PKG_DIR, PACMAN_SCC, PACMAN_DB_LCK, SAVE_STDOUT, LOG_DIR)
 
 logger = logging.getLogger()
 
@@ -89,6 +90,7 @@ def upgrade(interactive=False) -> List[str]:
             exit(0)
         else:
             def examine_upgrade(toadd: List[pyalpm.Package], toremove: List[pyalpm.Package]) -> None:
+                errors = list()
                 for pkg in toadd:
                     localpkg: pyalpm.Package = localdb.get_pkg(pkg.name)
                     localver = localpkg.version if localpkg else ""
@@ -98,14 +100,25 @@ def upgrade(interactive=False) -> List[str]:
                         _m_new = match(_testreg, pkg.version)
                         if _m_old and _m_new:
                             if (o := _m_old.groups()) != (n := _m_new.groups()):
-                                raise PackageHold(f"hold package {pkg.name} is going to be upgraded from {o=} to {n=}")
+                                errors.append(f"hold package {pkg.name} is going to be upgraded from {o=} to {n=}")
                         else:
-                            raise PackageHold(f"cannot match version regex for hold package {pkg.name}")
+                            errors.append(f"cannot match version regex for hold package {pkg.name}")
                 for pkg in toremove:
                     logger.debug(f"will remove {pkg.name} version {pkg.version}")
                     if pkg.name in HOLD:
-                        raise PackageHold(f"attempt to remove {pkg.name} which is set to hold")
-            examine_upgrade(t.to_add, t.to_remove)
+                        errors.append(f"attempt to remove {pkg.name} which is set to hold")
+                if errors:
+                    raise PackageHold(errors)
+            try:
+                examine_upgrade(t.to_add, t.to_remove)
+            except Exception as e:
+                if interactive:
+                    if ask_interactive_question(f"{e}, continue?"):
+                        logger.warning("user determined to continue")
+                    else:
+                        raise
+                else:
+                    raise
     finally:
         t.release()
     pacman_output = execute_with_io(['pacman', '-Su', '--noprogressbar', '--color', 'never'], UPGRADE_TIMEOUT, interactive=interactive)
@@ -138,6 +151,15 @@ def do_system_upgrade(debug=False, interactive=False) -> checkReport:
     else:
         raise MaxRetryReached(f'upgrade failed {NETWORK_RETRY} times')
 
+    if SAVE_STDOUT:
+        filename = datetime.now().astimezone().isoformat(timespec='seconds').replace(':', '_') + ".log"
+        logger.debug(f"saving stdout to {filename}")
+        try:
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
+            (LOG_DIR / filename).write_text("\n".join(stdout))
+        except Exception:
+            logger.warning(f"unable to save stdout to {filename}\n{traceback.format_exc()}")
+
     with open(PACMAN_LOG, 'r') as pacman_log:
         pacman_log.seek(log_anchor)
         log = pacman_log.read().split('\n')
@@ -145,6 +167,7 @@ def do_system_upgrade(debug=False, interactive=False) -> checkReport:
         report = log_checker(stdout, log, debug=debug)
     except Exception:
         logger.exception('checker has crashed, here is the debug info')
+        logger.setLevel(logging.DEBUG)
         _report = log_checker(stdout, log, debug=True)
         raise
 
@@ -235,12 +258,15 @@ def main() -> None:
         else:
             logger.debug(f'needrestart {p.stdout=}')
     import argparse
-    parser = argparse.ArgumentParser(description='Pacman Automatic Rolling Helper')
-    parser.add_argument('action', choices=['run', 'status', 'fail-reset'])
+    parser = argparse.ArgumentParser(description='Unattended Upgrades for Arch Linux')
+    parser.add_argument('action', choices=['run', 'status', 'reset', 'fail-reset', 'reset-failed'],
+                        help="what to do", metavar="run / status / reset ")
     parser.add_argument('-d', '--debug', action='store_true', help='enable debug mode')
     parser.add_argument('-v', '--verbose', action='store_true', help='show verbose report')
     parser.add_argument('-m', '--max', type=int, default=1, help='Number of upgrades to show')
-    parser.add_argument('-i', '--interactive', choices=['auto', 'on', 'off'], default='auto', help='allow interactive questions')
+    parser.add_argument('-i', '--interactive', choices=['auto', 'on', 'off'],
+                        default='auto', help='allow interactive questions',
+                        metavar="auto / on / off ")
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s')
@@ -301,7 +327,7 @@ def main() -> None:
                 print()
         if failed:
             exit(2)
-    elif args.action == 'fail-reset':
+    elif args.action in {'reset', 'fail-reset', 'reset-failed'}:
         if getuid() != 0:
             logger.error('you need to be root')
             exit(1)

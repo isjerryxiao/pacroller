@@ -9,6 +9,7 @@ CONFIG_FILE = 'config.json'
 F_KNOWN_OUTPUT_OVERRIDE = 'known_output_override.py'
 LIB_DIR = Path('/var/lib/pacroller')
 DB_FILE = 'db'
+LOG_DIR = Path('/var/log/pacroller')
 PACMAN_CONFIG = '/etc/pacman.conf'
 PACMAN_LOG = '/var/log/pacman.log'
 PACMAN_PKG_DIR = '/var/cache/pacman/pkg'
@@ -46,6 +47,7 @@ if CUSTOM_SYNC:
 
 EXTRA_SAFE = bool(_config.get('extra_safe', False))
 SHELL = str(_config.get('shell', '/bin/bash'))
+SAVE_STDOUT = bool(_config.get('save_stdout', False))
 
 HOLD = _config.get('hold', dict())
 for (k, v)  in HOLD.items():

@@ -6,9 +6,11 @@
     "sync_shell": "sync.sh",
     "extra_safe": false,
     "shell": "/bin/bash",
+    "save_stdout": true,
     "hold": {
         "linux": "(.*)",
-        "python": "[0-9]+[.]([0-9]+)[.][0-9]+[-][0-9]+"
+        "python": "[0-9]+[.]([0-9]+)[.][0-9]+[-][0-9]+",
+        "pacman": "([0-9]+)[.][0-9]+[.][0-9]+[-][0-9]+"
     },
     "ignored_pacnew": [
         "/etc/locale.gen",

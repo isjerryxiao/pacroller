@@ -1,7 +1,7 @@
 import subprocess
 from threading import Thread
 import logging
-from typing import List, BinaryIO, Iterator
+from typing import List, BinaryIO, Iterator, Union
 from io import DEFAULT_BUFFER_SIZE
 from time import mktime
 from datetime import datetime
@@ -60,25 +60,16 @@ def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool =
                     p.stdin.flush()
                 elif line.lower().endswith('[y/n]'):
                     if interactive:
-                        print(f"Please answer this question in 60 seconds:\n{line}", end=' ', flush=True)
-                        while True:
-                            read_ready, _, _ = select([stdin], list(), list(), 60)
-                            if not read_ready:
-                                terminate(p, signal=SIGINT)
-                                raise UnknownQuestionError(line, output)
-                            choice = read_ready[0].readline().strip()
-                            if choice.lower().startswith('y'):
-                                p.stdin.write('y\n')
-                                p.stdin.flush()
-                                break
-                            elif choice.lower().startswith('n'):
-                                p.stdin.write('n\n')
-                                p.stdin.flush()
-                                break
-                            else:
-                                if choice.lower().startswith('s'):
-                                    print(output)
-                                print("Please give an explicit answer [Y]es [N]o [S]how", end=' ', flush=True)
+                        choice = ask_interactive_question(line, info=output)
+                        if choice is None:
+                            terminate(p, signal=SIGINT)
+                            raise UnknownQuestionError(line, output)
+                        elif choice:
+                            p.stdin.write('y\n')
+                            p.stdin.flush()
+                        else:
+                            p.stdin.write('n\n')
+                            p.stdin.flush()
                     else:
                         terminate(p, signal=SIGINT)
                         raise UnknownQuestionError(line, output)
@@ -113,3 +104,20 @@ def back_readline(fp: BinaryIO) -> Iterator[str]:
         previous = blines[0]
         pos = next
     yield blines.pop(-1).decode('utf-8')
+
+def ask_interactive_question(question: str = "", timeout: int = 60, info: str = "") -> Union[bool, None]:
+    ''' on timeout, returns None '''
+    print(f"Please answer this question in {timeout} seconds:\n{question}", end=' ', flush=True)
+    while True:
+        read_ready, _, _ = select([stdin], list(), list(), timeout)
+        if not read_ready:
+            return None
+        choice = read_ready[0].readline().strip()
+        if choice.lower().startswith('y'):
+            return True
+        elif choice.lower().startswith('n'):
+            return False
+        else:
+            if info and choice.lower().startswith('i'):
+                print(info)
+            print(f"Please give an explicit answer [Y]es [N]o{' [I]nfo' if info else ''}", end=' ', flush=True)
