@@ -47,7 +47,7 @@ if CUSTOM_SYNC:
 
 EXTRA_SAFE = bool(_config.get('extra_safe', False))
 SHELL = str(_config.get('shell', '/bin/bash'))
-SAVE_STDOUT = bool(_config.get('save_stdout', False))
+SAVE_STDOUT = bool(_config.get('save_stdout', True))
 
 HOLD = _config.get('hold', dict())
 for (k, v)  in HOLD.items():
