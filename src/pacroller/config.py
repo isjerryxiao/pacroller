@@ -58,7 +58,7 @@ for i in IGNORED_PACNEW:
     assert isinstance(i, str)
 
 NEEDRESTART = bool(_config.get('need_restart', False))
-NEEDRESTART_CMD = _config.get('need_restart_cmd', False)
+NEEDRESTART_CMD = _config.get('need_restart_cmd', ["needrestart", "-r", "a", "-m", "a", "-l"])
 for i in NEEDRESTART_CMD:
     assert isinstance(i, str)
 
