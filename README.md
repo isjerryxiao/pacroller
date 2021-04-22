@@ -18,7 +18,7 @@ run [-d --debug]
     without resetting its failure status.
 status [-v --verbose] [-m --max <number>]
     print details of a previous successful upgrade
-fail-reset
+reset
     reset the current failure status
 ```
 There is also a systemd timer for scheduled automatic upgrades.  
