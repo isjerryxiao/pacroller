@@ -42,7 +42,7 @@ def main() -> None:
                     print(f"new value {k}[{_o}] = {v[_o]}")
 
     oldcfg.rename(CONFIG_DIR / f"{CONFIG_FILE}.pacsave")
-    oldcfg.write_text(json.dumps(new_copy, indent=4))
+    oldcfg.write_text(json.dumps(new_copy, indent=4)+"\n")
     print("wrote new config")
 
 if __name__ == '__main__':
