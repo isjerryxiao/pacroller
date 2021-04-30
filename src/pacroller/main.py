@@ -281,7 +281,7 @@ def main() -> None:
             logger.error('you need to be root')
             exit(1)
         if prev_err := has_previous_error():
-            logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run fail-reset.')
+            logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run reset.')
             exit(2)
         if SYSTEMD:
             if _s := is_system_failed():
