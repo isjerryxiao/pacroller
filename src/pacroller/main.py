@@ -3,6 +3,7 @@
 from pathlib import Path
 import subprocess
 import logging
+import logging.handlers
 from re import match
 import json
 from os import environ, getuid, isatty
@@ -130,6 +131,20 @@ def do_system_upgrade(debug=False, interactive=False) -> checkReport:
     else:
         raise MaxRetryReached(f'sync failed {NETWORK_RETRY} times')
 
+    stdout_handler = logging.NullHandler
+    if SAVE_STDOUT:
+        try:
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
+            _formatter = logging.Formatter(fmt='%(asctime)s - %(message)s')
+            stdout_handler = logging.handlers.RotatingFileHandler(LOG_DIR / "stdout.log", mode='a',
+                            maxBytes=10*1024**2, backupCount=2)
+            stdout_handler.setFormatter(_formatter)
+            stdout_handler.setLevel(logging.DEBUG)
+        except Exception:
+            logging.exception(f"unable to save stdout to {LOG_DIR}")
+            stdout_handler = logging.NullHandler
+    logger.addHandler(stdout_handler)
+
     for _ in range(NETWORK_RETRY):
         try:
             with open(PACMAN_LOG, 'r') as pacman_log:
@@ -145,14 +160,7 @@ def do_system_upgrade(debug=False, interactive=False) -> checkReport:
     else:
         raise MaxRetryReached(f'upgrade failed {NETWORK_RETRY} times')
 
-    if SAVE_STDOUT:
-        filename = datetime.now().astimezone().isoformat(timespec='seconds').replace(':', '_') + ".log"
-        logger.debug(f"saving stdout to {filename}")
-        try:
-            LOG_DIR.mkdir(parents=True, exist_ok=True)
-            (LOG_DIR / filename).write_text("\n".join(stdout))
-        except Exception:
-            logger.warning(f"unable to save stdout to {filename}\n{traceback.format_exc()}")
+    logger.removeHandler(stdout_handler)
 
     with open(PACMAN_LOG, 'r') as pacman_log:
         pacman_log.seek(log_anchor)

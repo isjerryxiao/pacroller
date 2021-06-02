@@ -44,6 +44,7 @@ def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool =
             stderr=subprocess.STDOUT,
             encoding='utf-8'
         )
+    logger.debug(f"running {command}")
     try:
         Thread(target=set_timeout, args=(p, timeout), daemon=True).start()
         line = ''
