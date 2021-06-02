@@ -131,7 +131,7 @@ def do_system_upgrade(debug=False, interactive=False) -> checkReport:
     else:
         raise MaxRetryReached(f'sync failed {NETWORK_RETRY} times')
 
-    stdout_handler = logging.NullHandler
+    stdout_handler = None
     if SAVE_STDOUT:
         try:
             LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -142,8 +142,9 @@ def do_system_upgrade(debug=False, interactive=False) -> checkReport:
             stdout_handler.setLevel(logging.DEBUG)
         except Exception:
             logging.exception(f"unable to save stdout to {LOG_DIR}")
-            stdout_handler = logging.NullHandler
-    logger.addHandler(stdout_handler)
+            stdout_handler = None
+    if stdout_handler:
+        logger.addHandler(stdout_handler)
 
     for _ in range(NETWORK_RETRY):
         try:
@@ -160,7 +161,8 @@ def do_system_upgrade(debug=False, interactive=False) -> checkReport:
     else:
         raise MaxRetryReached(f'upgrade failed {NETWORK_RETRY} times')
 
-    logger.removeHandler(stdout_handler)
+    if stdout_handler:
+        logger.removeHandler(stdout_handler)
 
     with open(PACMAN_LOG, 'r') as pacman_log:
         pacman_log.seek(log_anchor)
