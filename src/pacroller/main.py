@@ -8,8 +8,6 @@ import json
 from os import environ, getuid, isatty
 import traceback
 from datetime import datetime
-import pyalpm
-import pycman
 from typing import List, Iterator
 from pacroller.utils import execute_with_io, UnknownQuestionError, back_readline, ask_interactive_question
 from pacroller.checker import log_checker, sync_err_is_net, upgrade_err_is_net, checkReport
@@ -66,61 +64,57 @@ def sync() -> None:
         logger.debug(f'sync {p.stdout=}')
         logger.info('sync end')
 
-class alpmCallback:
-    @staticmethod
-    def noop() -> None:
-        pass
-    def setup_hdl(self, handle: pyalpm.Handle) -> None:
-        handle.dlcb = self.noop
-        handle.eventcb = self.noop
-        handle.questioncb = self.noop
-        handle.progresscb = self.noop
-
 def upgrade(interactive=False) -> List[str]:
     logger.info('upgrade start')
-    pycman.config.cb_log = lambda *_: None
-    handle = pycman.config.init_with_config(PACMAN_CONFIG)
-    localdb = handle.get_localdb()
-    alpmCallback().setup_hdl(handle)
-    t = handle.init_transaction()
-    try:
-        t.sysupgrade(False) # no downgrade
-        if len(t.to_add) + len(t.to_remove) == 0:
-            logger.info('upgrade end, nothing to do')
-            exit(0)
+    check_upgrade_cmd = ['pacman', '-Qu', '--color', 'never']
+    p = subprocess.run(
+        check_upgrade_cmd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        encoding='utf-8',
+        timeout=TIMEOUT,
+        check=False
+    )
+    if p.returncode != 1:
+        p.check_returncode()
+    upgrade_pkgs = list()
+    for line in filter(None, p.stdout.split('\n')):
+        pkgname, over, _ar, nver, *ignored = line.split()
+        assert _ar == '->'
+        assert not ignored or (len(ignored) == 1 and ignored[0] == "[ignored]")
+        if ignored:
+            logger.debug(f"upgrade ignored: {pkgname} {over} -> {nver}")
         else:
-            def examine_upgrade(toadd: List[pyalpm.Package], toremove: List[pyalpm.Package]) -> None:
-                errors = list()
-                for pkg in toadd:
-                    localpkg: pyalpm.Package = localdb.get_pkg(pkg.name)
-                    localver = localpkg.version if localpkg else ""
-                    logger.debug(f"will upgrade {pkg.name} from {localver} to {pkg.version}")
-                    if _testreg := HOLD.get(pkg.name):
-                        _m_old = match(_testreg, localver)
-                        _m_new = match(_testreg, pkg.version)
-                        if _m_old and _m_new:
-                            if (o := _m_old.groups()) != (n := _m_new.groups()):
-                                errors.append(f"hold package {pkg.name} is going to be upgraded from {o=} to {n=}")
-                        else:
-                            errors.append(f"cannot match version regex for hold package {pkg.name}")
-                for pkg in toremove:
-                    logger.debug(f"will remove {pkg.name} version {pkg.version}")
-                    if pkg.name in HOLD:
-                        errors.append(f"attempt to remove {pkg.name} which is set to hold")
-                if errors:
-                    raise PackageHold(errors)
-            try:
-                examine_upgrade(t.to_add, t.to_remove)
-            except Exception as e:
-                if interactive:
-                    if ask_interactive_question(f"{e}, continue?"):
-                        logger.warning("user determined to continue")
+            logger.debug(f"upgrade: {pkgname} {over} -> {nver}")
+            upgrade_pkgs.append((pkgname, over, nver))
+    if not upgrade_pkgs:
+        logger.info('upgrade end, nothing to do')
+        exit(0)
+    else:
+        try:
+            errors = list()
+            for pkgname, over, nver in upgrade_pkgs:
+                if _testreg := HOLD.get(pkgname):
+                    _m_old = match(_testreg, over)
+                    _m_new = match(_testreg, nver)
+                    if _m_old and _m_new:
+                        if (o := _m_old.groups()) != (n := _m_new.groups()):
+                            errors.append(f"hold package {pkgname} is going to be upgraded from {o=} to {n=}")
+                        if not o or not n:
+                            errors.append(f"hold package {pkgname}: version regex missing matching groups {o=} {n=}")
                     else:
-                        raise
+                        errors.append(f"cannot match version regex for hold package {pkgname}")
+            if errors:
+                raise PackageHold(errors)
+        except PackageHold as e:
+            if interactive:
+                if ask_interactive_question(f"{e}, continue?"):
+                    logger.warning("user determined to continue")
                 else:
                     raise
-    finally:
-        t.release()
+            else:
+                raise
     pacman_output = execute_with_io(['pacman', '-Su', '--noprogressbar', '--color', 'never'], UPGRADE_TIMEOUT, interactive=interactive)
     logger.info('upgrade end')
     return pacman_output
