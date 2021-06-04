@@ -272,10 +272,11 @@ def main() -> None:
                         default='auto', help='allow interactive questions',
                         metavar="auto / on / off ")
     args = parser.parse_args()
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s')
-    else:
-        logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+    _log_format = '%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s' if args.debug else '%(levelname)s - %(message)s'
+    logging.basicConfig(level=logging.DEBUG, format=_log_format)
+    if not args.debug:
+        assert len(logger.handlers) == 1
+        logger.handlers[0].setLevel(logging.INFO)
     locale_set()
     interactive = args.interactive == "on" or not (args.interactive == 'off' or not isatty(0))
     logger.debug(f"interactive questions {'enabled' if interactive else 'disabled'}")
