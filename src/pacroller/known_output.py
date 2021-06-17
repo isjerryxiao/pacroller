@@ -31,17 +31,17 @@ _keyring_output = [
     r'gpg: next trustdb check due at .+',
     r'gpg: public key .+ is .+ than the signature',
     r'gpg: Warning: using insecure memory!',
+    r'gpg: checking the trustdb',
+    r'gpg: setting ownertrust to .+',
+    r'gpg: marginals needed:.+ completes needed:.+ trust model: pgp',
+    r'gpg: depth:.+ valid:.+ signed:.+ trust:.+, .+, .+, .+, .+, .+',
     r'[ ]+-> .+',
 ]
 
 KNOWN_PACKAGE_OUTPUT = {
     '': [],
     'archlinux-keyring': _keyring_output,
-    'archlinuxcn-keyring': [
-        *_keyring_output,
-        r'gpg: marginals needed:.+ completes needed:.+ trust model: pgp',
-        r'gpg: depth:.+ valid:.+ signed:.+ trust:.+, .+, .+, .+, .+, .+',
-    ],
+    'archlinuxcn-keyring': _keyring_output,
     'brltty': [
         r'Please add your user to the brlapi group\.',
     ],
