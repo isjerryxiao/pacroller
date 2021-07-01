@@ -280,17 +280,15 @@ def main() -> None:
         logger.handlers[0].setLevel(logging.INFO)
     locale_set()
     interactive = args.interactive == "on" or not (args.interactive == 'off' or not isatty(0))
-    send_mail = MailSender().send_text_plain if not interactive else lambda *_, **_: None
     logger.debug(f"interactive questions {'enabled' if interactive else 'disabled'}")
+    send_mail = MailSender().send_text_plain if not interactive else lambda *_: None
 
     if args.action == 'run':
         if getuid() != 0:
             logger.error('you need to be root')
             exit(1)
         if prev_err := has_previous_error():
-            _err = f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run reset.'
-            logger.error(_err)
-            send_mail(_err)
+            logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run reset.')
             exit(2)
         if SYSTEMD:
             if _s := is_system_failed():
