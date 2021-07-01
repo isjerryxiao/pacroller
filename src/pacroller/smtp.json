@@ -1,0 +1,15 @@
+{
+    "enabled": false,
+    "ssl": true,
+    "host": "smtp.example.com",
+    "port": 465,
+    "from": "me@example.com",
+    "to": "you1@example.com you2@example.com",
+    "auth": {
+        "comment1": "## if you don't want any kind of authorization, delete the whole auth section",
+        "comment2": "## you can have either one of the two following password keys",
+        "username": "myname",
+        "password": "mypassword",
+        "password_base64": "bXlwYXNzd29yZA=="
+    }
+}

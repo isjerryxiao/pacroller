@@ -16,6 +16,7 @@ from pacroller.config import (CONFIG_DIR, CONFIG_FILE, LIB_DIR, DB_FILE, PACMAN_
                               TIMEOUT, UPGRADE_TIMEOUT, NETWORK_RETRY, CUSTOM_SYNC, SYNC_SH,
                               EXTRA_SAFE, SHELL, HOLD, NEEDRESTART, NEEDRESTART_CMD, SYSTEMD,
                               PACMAN_PKG_DIR, PACMAN_SCC, PACMAN_DB_LCK, SAVE_STDOUT, LOG_DIR)
+from pacroller.mailer import MailSender
 
 logger = logging.getLogger()
 
@@ -279,6 +280,7 @@ def main() -> None:
         logger.handlers[0].setLevel(logging.INFO)
     locale_set()
     interactive = args.interactive == "on" or not (args.interactive == 'off' or not isatty(0))
+    send_mail = MailSender().send_text_plain if not interactive else lambda *_, **_: None
     logger.debug(f"interactive questions {'enabled' if interactive else 'disabled'}")
 
     if args.action == 'run':
@@ -286,26 +288,35 @@ def main() -> None:
             logger.error('you need to be root')
             exit(1)
         if prev_err := has_previous_error():
-            logger.error(f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run reset.')
+            _err = f'Cannot continue, a previous error {prev_err} is still present. Please resolve this issue and run reset.'
+            logger.error(_err)
+            send_mail(_err)
             exit(2)
         if SYSTEMD:
             if _s := is_system_failed():
-                logger.error(f'systemd is in {_s} state, refused')
+                _err = f'systemd is in {_s} state, refused'
+                logger.error(_err)
+                send_mail(_err)
                 exit(11)
         if Path(PACMAN_DB_LCK).exists():
-            logger.error(f'Database is locked at {PACMAN_DB_LCK}')
+            _err = f'Database is locked at {PACMAN_DB_LCK}'
+            logger.error(_err)
+            send_mail(_err)
             exit(2)
         try:
             report = do_system_upgrade(debug=args.debug, interactive=interactive)
         except NonFatal:
+            send_mail(f"NonFatal Error:\n{traceback.format_exc()}")
             raise
         except Exception as e:
             write_db(None, e)
+            send_mail(f"Fatal Error:\n{traceback.format_exc()}")
             raise
         else:
             exc = CheckFailed('manual inspection required') if report.failed else None
             write_db(report, exc)
             if exc:
+                send_mail(f"{exc}\n\n{report.summary(verbose=args.verbose, show_package=False)}")
                 exit(2)
             if NEEDRESTART:
                 run_needrestart()

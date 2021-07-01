@@ -1,11 +1,13 @@
 import json
 from pathlib import Path
 import importlib.util
+from base64 import b64decode
 import sys
 from typing import Any
 
 CONFIG_DIR = Path('/etc/pacroller')
 CONFIG_FILE = 'config.json'
+CONFIG_FILE_SMTP = 'smtp.json'
 F_KNOWN_OUTPUT_OVERRIDE = 'known_output_override.py'
 LIB_DIR = Path('/var/lib/pacroller')
 DB_FILE = 'db'
@@ -20,6 +22,11 @@ if (cfg := (CONFIG_DIR / CONFIG_FILE)).exists():
     _config: dict = json.loads(cfg.read_text())
 else:
     _config = dict()
+
+if (smtp_cfg := (CONFIG_DIR / CONFIG_FILE_SMTP)).exists():
+    _smtp_config: dict = json.loads(smtp_cfg.read_text())
+else:
+    _smtp_config = dict()
 
 def _import_module(fpath: Path) -> Any:
     spec = importlib.util.spec_from_file_location(str(fpath).removesuffix('.py').replace('/', '.'), fpath)
@@ -64,3 +71,23 @@ for i in NEEDRESTART_CMD:
 
 SYSTEMD = bool(_config.get('systemd-check', True))
 PACMAN_SCC = bool(_config.get('clear_pkg_cache', False))
+
+SMTP_ENABLED = bool(_smtp_config.get('enabled', False))
+SMTP_SSL = bool(_smtp_config.get('ssl', True))
+SMTP_HOST = _smtp_config.get('host', "")
+SMTP_PORT = int(_smtp_config.get('port', 0))
+SMTP_FROM = _smtp_config.get('from', "")
+SMTP_TO = _smtp_config.get('to', "")
+SMTP_AUTH = dict(_smtp_config.get('auth', {}))
+if SMTP_ENABLED:
+    assert SMTP_HOST
+    assert SMTP_FROM
+    assert SMTP_TO
+    assert 0 <= SMTP_PORT <= 65536
+    if SMTP_AUTH:
+        assert SMTP_AUTH['username']
+        if _smtp_auth_b64 := SMTP_AUTH.get('password_base64', ''):
+            SMTP_AUTH['password'] = b64decode(_smtp_auth_b64).decode('utf-8')
+            SMTP_AUTH.pop('password_base64')
+        assert SMTP_AUTH['password']
+        SMTP_AUTH = {k:v for k, v in SMTP_AUTH.items() if k in {'username', 'password'}}
