@@ -264,8 +264,8 @@ def main() -> None:
             logger.debug(f'needrestart {p.stdout=}')
     import argparse
     parser = argparse.ArgumentParser(description='Unattended Upgrades for Arch Linux')
-    parser.add_argument('action', choices=['run', 'status', 'reset', 'fail-reset', 'reset-failed'],
-                        help="what to do", metavar="run / status / reset ")
+    parser.add_argument('action', choices=['run', 'status', 'reset', 'fail-reset', 'reset-failed', 'test-smtp'],
+                        help="what to do", metavar="run / status / reset / test-smtp")
     parser.add_argument('-d', '--debug', action='store_true', help='enable debug mode')
     parser.add_argument('-v', '--verbose', action='store_true', help='show verbose report')
     parser.add_argument('-m', '--max', type=int, default=1, help='Number of upgrades to show')
@@ -320,6 +320,15 @@ def main() -> None:
                 run_needrestart()
             if PACMAN_SCC:
                 clear_pkg_cache()
+
+    elif args.action == 'test-smtp':
+        logger.info('sending test mail...')
+        if _smtp_result := MailSender().send_text_plain("This is a test mail\nIf you see this email, your smtp config is working."):
+            logger.info("success")
+        elif _smtp_result is None:
+            logger.warning("smtp is disabled")
+        else:
+            logger.error("fail")
 
     elif args.action == 'status':
         count = 0

@@ -24,7 +24,12 @@ else:
     _config = dict()
 
 if (smtp_cfg := (CONFIG_DIR / CONFIG_FILE_SMTP)).exists():
-    _smtp_config: dict = json.loads(smtp_cfg.read_text())
+    try:
+        _smtp_cfg_text = smtp_cfg.read_text()
+    except PermissionError:
+        _smtp_config = dict()
+    else:
+        _smtp_config: dict = json.loads(_smtp_cfg_text)
 else:
     _smtp_config = dict()
 

@@ -17,9 +17,9 @@ class MailSender:
         self.mailfrom = SMTP_FROM
         self.mailto = SMTP_TO.split()
         self.smtp_cls = smtplib.SMTP_SSL if self.ssl else smtplib.SMTP
-    def send_text_plain(self, text: str, subject: str = f"pacroller from {hostname}", mailto: List[str] = list()) -> None:
+    def send_text_plain(self, text: str, subject: str = f"pacroller on {hostname}", mailto: List[str] = list()) -> bool:
         if not SMTP_ENABLED:
-            return
+            return None
         for _ in range(NETWORK_RETRY):
             try:
                 server = self.smtp_cls(self.host, self.port)
@@ -40,6 +40,8 @@ class MailSender:
                 break
         else:
             logger.error(f"unable to send email after {NETWORK_RETRY} attempts {text=}")
+            return False
+        return True
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s')
