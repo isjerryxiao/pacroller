@@ -68,9 +68,10 @@ def sync() -> None:
 
 def upgrade(interactive=False) -> List[str]:
     logger.info('upgrade start')
-    check_upgrade_cmd = ['pacman', '-Qu', '--color', 'never']
-    p = subprocess.run(
-        check_upgrade_cmd,
+    query_upgrade_cmd = ['pacman', '-Qu', '--color', 'never']
+    sync_upgrade_cmd = ['pacman', '-Su', '--print-format', '%n %v', '--color', 'never']
+    qp = subprocess.run(
+        query_upgrade_cmd,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -78,10 +79,20 @@ def upgrade(interactive=False) -> List[str]:
         timeout=TIMEOUT,
         check=False
     )
-    if p.returncode != 1:
-        p.check_returncode()
+    if qp.returncode != 1:
+        qp.check_returncode()
+    sp = subprocess.run(
+        sync_upgrade_cmd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        encoding='utf-8',
+        timeout=TIMEOUT,
+        check=True
+    )
+    upgrade_pkgnames = list()
     upgrade_pkgs = list()
-    for line in filter(None, p.stdout.split('\n')):
+    for line in filter(None, qp.stdout.split('\n')):
         pkgname, over, _ar, nver, *ignored = line.split()
         assert _ar == '->'
         assert not ignored or (len(ignored) == 1 and ignored[0] == "[ignored]")
@@ -90,6 +101,12 @@ def upgrade(interactive=False) -> List[str]:
         else:
             logger.debug(f"upgrade: {pkgname} {over} -> {nver}")
             upgrade_pkgs.append((pkgname, over, nver))
+            upgrade_pkgnames.append(pkgname)
+    for line in filter(None, sp.stdout.split('\n')):
+        pkgname, nver = line.split()
+        if pkgname not in upgrade_pkgnames:
+            logger.debug(f"install: {pkgname} {nver}")
+            upgrade_pkgs.append((pkgname, '', nver))
     if not upgrade_pkgs:
         logger.info('upgrade end, nothing to do')
         exit(0)
@@ -98,15 +115,18 @@ def upgrade(interactive=False) -> List[str]:
             errors = list()
             for pkgname, over, nver in upgrade_pkgs:
                 if _testreg := HOLD.get(pkgname):
-                    _m_old = match(_testreg, over)
-                    _m_new = match(_testreg, nver)
-                    if _m_old and _m_new:
-                        if (o := _m_old.groups()) != (n := _m_new.groups()):
-                            errors.append(f"hold package {pkgname} is going to be upgraded from {o=} to {n=}")
-                        if not o or not n:
-                            errors.append(f"hold package {pkgname}: version regex missing matching groups {o=} {n=}")
+                    if over:
+                        _m_old = match(_testreg, over)
+                        _m_new = match(_testreg, nver)
+                        if _m_old and _m_new:
+                            if (o := _m_old.groups()) != (n := _m_new.groups()):
+                                errors.append(f"hold package {pkgname} is going to be upgraded from {over} to {nver}")
+                            if not o or not n:
+                                errors.append(f"hold package {pkgname}: version regex missing matching groups {over=} {nver=} {o=} {n=}")
+                        else:
+                            errors.append(f"cannot match version regex for hold package {pkgname}")
                     else:
-                        errors.append(f"cannot match version regex for hold package {pkgname}")
+                        errors.append(f"hold package {pkgname} {nver} is going to be installed")
             if errors:
                 raise PackageHold(errors)
         except PackageHold as e:
