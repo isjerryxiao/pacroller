@@ -10,6 +10,9 @@ KNOWN_HOOK_OUTPUT = {
     '30-systemd-sysctl.hook': [
         r'Not setting (.+) \(explicit setting exists\)\.',
     ],
+    '30-systemd-udev-reload.hook': [
+        r'[ ][ ]Skipped: Device manager is not running\.',
+    ],
     '90-mkinitcpio-install.hook': [
         r'==> Building image from preset: .+',
         r'==> Starting build: .+',
@@ -38,6 +41,10 @@ _keyring_output = [
     r'[ ]+-> .+',
 ]
 
+_vbox_output = [
+    r'0%\.\.\.10%\.\.\.20%\.\.\.30%\.\.\.40%\.\.\.50%\.\.\.60%\.\.\.70%\.\.\.80%\.\.\.90%\.\.\.100%',
+]
+
 KNOWN_PACKAGE_OUTPUT = {
     '': [],
     'archlinux-keyring': _keyring_output,
@@ -53,5 +60,10 @@ KNOWN_PACKAGE_OUTPUT = {
     'fontconfig': [
         r'Rebuilding fontconfig cache\.\.\.',
     ],
+    'nvidia-utils': 'If you run into trouble with CUDA not being available, run nvidia-modprobe first\.',
+    'virtualbox': _vbox_output,
+    'virtualbox-ext-oracle': _vbox_output,
+    'virtualbox-ext-vnc': _vbox_output,
+    'virtualbox-ext-vnc-svn': _vbox_output,
     **KNOWN_PACKAGE_OUTPUT_OVERRIDE
 }
