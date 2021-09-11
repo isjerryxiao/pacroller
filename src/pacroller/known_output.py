@@ -38,6 +38,8 @@ _keyring_output = [
     r'gpg: setting ownertrust to .+',
     r'gpg: marginals needed:.+ completes needed:.+ trust model: pgp',
     r'gpg: depth:.+ valid:.+ signed:.+ trust:.+, .+, .+, .+, .+, .+',
+    r'gpg: key .+: no user ID for key signature packet of class .+',
+    r'gpg: inserting ownertrust of .+',
     r'[ ]+-> .+',
 ]
 
