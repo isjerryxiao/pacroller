@@ -23,7 +23,8 @@ setuptools.setup(
     python_requires='>=3.9',
     entry_points={
         'console_scripts': [
-            'pacroller=pacroller.main:main'
+            'pacroller=pacroller.main:main',
+            'pacroller-analyze=pacroller.analyze:main'
         ]
     },
     install_requires=['pyalpm']
