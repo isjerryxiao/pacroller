@@ -19,6 +19,8 @@ REGEX = {
     'l_transaction_complete': r'transaction completed',
     'l_upgrade': r'upgraded (.+) \((.+) -> (.+)\)',
     'l_install': r'installed (.+) \((.+)\)',
+    'l_downgrade': r'downgraded (.+) \((.+) -> (.+)\)',
+    'l_reinstall': r'reinstalled (.+) \((.+)\)',
     'l_remove': r'removed (.+) \((.+)\)',
     'l_pacnew': r'warning: (.+) installed as (.+\.pacnew)',
 }
@@ -189,6 +191,12 @@ def _log_parser(log: List[str], report: checkReport) -> None:
             elif _m := REGEX['l_remove'].match(msg):
                 name, old = _m.groups()
                 report.change(name, old, None)
+            elif _m := REGEX['l_downgrade'].match(msg):
+                name, old, new = _m.groups()
+                report.warn(f"downgrade {name} from {old} to {new}")
+            elif _m := REGEX['l_reinstall'].match(msg):
+                name, new = _m.groups()
+                report.warn(f"reinstall {name} {new}")
             elif REGEX['l_transaction_start'].match(msg):
                 logger.debug('transaction_start')
                 if in_transaction == 0:
@@ -230,7 +238,7 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                         ln -= 1
                         break
             else:
-                report.crit(f'ALPM {line=} is unknown')
+                report.crit(f'[NOM] {msg}')
         elif source == 'ALPM-SCRIPTLET':
             (_, _, _pmsg) = _split_log_line(log[ln-1])
             if _m := REGEX['l_upgrade'].match(_pmsg):
