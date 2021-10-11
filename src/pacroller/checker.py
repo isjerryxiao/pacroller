@@ -238,7 +238,7 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                         ln -= 1
                         break
             else:
-                report.crit(f'[NOM] {msg}')
+                report.crit(f'[NOM-ALPM] {msg}')
         elif source == 'ALPM-SCRIPTLET':
             (_, _, _pmsg) = _split_log_line(log[ln-1])
             if _m := REGEX['l_upgrade'].match(_pmsg):
@@ -248,7 +248,7 @@ def _log_parser(log: List[str], report: checkReport) -> None:
             elif _m := REGEX['l_remove'].match(_pmsg):
                 pkg, *_ = _m.groups()
             else:
-                report.crit(f'{line=} has unknown SCRIPTLET output')
+                report.crit(f'[NOM-SCRIPTLET] {_pmsg}')
                 ln += 1
                 continue
             logger.debug(f'.install start {pkg=}')
