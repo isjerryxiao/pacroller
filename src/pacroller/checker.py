@@ -247,6 +247,10 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                 pkg, *_ = _m.groups()
             elif _m := REGEX['l_remove'].match(_pmsg):
                 pkg, *_ = _m.groups()
+            elif _m := REGEX['l_downgrade'].match(_pmsg):
+                pkg, *_ = _m.groups()
+            elif _m := REGEX['l_reinstall'].match(_pmsg):
+                pkg, *_ = _m.groups()
             else:
                 report.crit(f'[NOM-SCRIPTLET] {_pmsg}')
                 ln += 1
