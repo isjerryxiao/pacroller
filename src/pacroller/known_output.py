@@ -21,6 +21,14 @@ KNOWN_HOOK_OUTPUT = {
         r'==> Creating (?:.+)-compressed initcpio image: .+',
         r'==> Image generation successful.*',
         r'[ ]+-> .+',
+        r'ssh-.* .*',
+    ],
+    '70-dkms-upgrade.hook': [
+        r'==> dkms remove --no-depmod -m .* -v .* -k .*',
+    ],
+    '70-dkms-install.hook': [
+        r'==> dkms install --no-depmod -m .* -v .* -k .*',
+        r'==> depmod .*',
     ],
     **KNOWN_HOOK_OUTPUT_OVERRIDE
 }
@@ -62,10 +70,17 @@ KNOWN_PACKAGE_OUTPUT = {
     'fontconfig': [
         r'Rebuilding fontconfig cache\.\.\.',
     ],
-    'nvidia-utils': 'If you run into trouble with CUDA not being available, run nvidia-modprobe first\.',
+    'nvidia-utils': [
+        r'If you run into trouble with CUDA not being available, run nvidia-modprobe first\.',
+    ],
     'virtualbox': _vbox_output,
     'virtualbox-ext-oracle': _vbox_output,
     'virtualbox-ext-vnc': _vbox_output,
     'virtualbox-ext-vnc-svn': _vbox_output,
+    'tor-browser': [
+        r'$',
+        r'==> The copy of Tor Browser in your home directory will be upgraded at the',
+        r'==> first time you run it as your normal user\. Just start it and have fun!',
+    ],
     **KNOWN_PACKAGE_OUTPUT_OVERRIDE
 }
