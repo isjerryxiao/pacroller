@@ -278,7 +278,8 @@ def _log_parser(log: List[str], report: checkReport) -> None:
 def sync_err_is_net(output: str) -> bool:
     ''' check if a sync failure is caused by network '''
     output = output.strip().split('\n')
-    if 'error: failed to synchronize all databases (download library error)' in output:
+    if 'error: failed to synchronize all databases (download library error)' in output \
+        or 'error: failed to synchronize all databases (unexpected error)' in output:
         return True
     else:
         return False
