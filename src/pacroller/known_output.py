@@ -22,7 +22,6 @@ KNOWN_HOOK_OUTPUT = {
         r'==> Image generation successful.*',
         r'[ ]+-> .+',
         r'ssh-.* .*',
-        r'[ ]+Decompress:.*',
     ],
     '70-dkms-upgrade.hook': [
         r'==> dkms remove --no-depmod -m .* -v .* -k .*',
