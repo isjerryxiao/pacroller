@@ -131,7 +131,8 @@ def upgrade(interactive=False) -> List[str]:
                 raise PackageHold(errors)
         except PackageHold as e:
             if interactive:
-                if ask_interactive_question(f"{e}, continue?"):
+                user_input = ask_interactive_question(f"{e}, continue? ")
+                if user_input and user_input.lower().startswith('y'):
                     logger.warning("user determined to continue")
                 else:
                     raise
