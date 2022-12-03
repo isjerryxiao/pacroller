@@ -227,9 +227,6 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                     line = log[ln]
                     (_, source, msg) = _split_log_line(line)
                     if source == 'ALPM-SCRIPTLET':
-                        if msg == r"ERROR: ld.so: object '/usr/lib/coreutils/libstdbuf.so' from LD_PRELOAD cannot be preloaded (wrong ELF class: ELFCLASS64): ignored.":
-                            logger.debug(f'hook output ignored {hook_name=} {msg=}')
-                            continue
                         for r in (*(KNOWN_HOOK_OUTPUT.get('', [])), *(KNOWN_HOOK_OUTPUT.get(hook_name, []))):
                             if match(r, msg):
                                 logger.debug(f'hook output match {hook_name=} {msg=} {r=}')
