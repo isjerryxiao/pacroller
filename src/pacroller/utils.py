@@ -1,15 +1,22 @@
 import subprocess
 from threading import Thread
 import logging
-from typing import List, BinaryIO, Iterator, Union
+from typing import List, BinaryIO, Iterator, Union, Callable
 from io import DEFAULT_BUFFER_SIZE
 from time import mktime
 from datetime import datetime
 from signal import SIGINT, SIGTERM, Signals
 from select import select
 from sys import stdin
-from os import environ
+from os import set_blocking, close as os_close
+from pty import openpty
+from re import compile
 logger = logging.getLogger()
+
+ANSI_ESCAPE = compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+# https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
+# 0a, 0d and 1b need special process
+GENERAL_NON_PRINTABLE = {b'\x07', b'\x08', b'\x09', b'\x0b', b'\x0c', b'\x7f'}
 
 class UnknownQuestionError(subprocess.SubprocessError):
     def __init__(self, question, output=None):
@@ -30,7 +37,7 @@ def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool =
         except subprocess.TimeoutExpired:
             logger.critical(f'unable to terminate {p}, killing')
             p.kill()
-    def set_timeout(p: subprocess.Popen, timeout: int) -> None:
+    def set_timeout(p: subprocess.Popen, timeout: int, callback: Callable = lambda: None) -> None:
         try:
             p.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
@@ -38,45 +45,81 @@ def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool =
             terminate(p)
         else:
             logger.debug('set_timeout exit')
-    linebuf_env = dict(environ)
-    linebuf_env['_STDBUF_O'] = 'L'
-    linebuf_env['_STDBUF_E'] = 'L'
-    linebuf_env['LD_PRELOAD'] = '/usr/lib/coreutils/libstdbuf.so'
+        finally:
+            callback()
+    ptymaster, ptyslave = openpty()
+    set_blocking(ptymaster, False)
+    stdout = open(ptymaster, "rb", buffering=0)
+    stdin = open(ptymaster, "w")
     p = subprocess.Popen(
             command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            encoding='utf-8',
-            env=linebuf_env
-        )
-    logger.debug(f"running {command}")
+            stdin=ptyslave,
+            stdout=ptyslave,
+            stderr=ptyslave,
+    )
+    logger.log(logging.DEBUG+1, f"running {command}")
     try:
-        Thread(target=set_timeout, args=(p, timeout), daemon=True).start()
-        line = ''
+        def cleanup():
+            actions = (
+                (stdin, "close"),
+                (stdout, "close"),
+                (ptymaster, os_close),
+                (ptyslave, os_close),
+            )
+            for obj, action in actions:
+                try:
+                    if isinstance(action, str):
+                        getattr(obj, action)()
+                    else:
+                        action(obj)
+                except OSError:
+                    pass
+        Thread(target=set_timeout, args=(p, timeout, cleanup), daemon=True).start()
         output = ''
-        while (r := p.stdout.read(1)) != '':
-            output += r
-            line += r
-            if r == '\n':
-                logger.debug('STDOUT: %s', line[:-1])
-                line = ''
-            if line == ':: Proceed with installation? [Y/n]':
-                p.stdin.write('y\n')
-                p.stdin.flush()
-            elif line.lower().endswith('[y/n]') or line == 'Enter a number (default=1): ':
-                if interactive:
-                    choice = ask_interactive_question(line, info=output)
-                    if choice is None:
+        while p.poll() is None:
+            try:
+                select([ptymaster], list(), list())
+                _raw = stdout.read()
+            except (OSError, ValueError):
+                # should be cleanup routine closed the fd, lets check the process return code
+                continue
+            if not _raw:
+                logger.debug('read void from stdout')
+                continue
+            logger.debug(f"raw stdout: {_raw}")
+            for b in GENERAL_NON_PRINTABLE:
+                _raw = _raw.replace(b, b'')
+            need_attention = b'\x1b[?25h' in _raw
+            raw = _raw.decode('utf-8', errors='replace')
+            raw = raw.replace('\r\n', '\n')
+            raw = ANSI_ESCAPE.sub('', raw)
+            output += raw
+            rawl = (raw[:-1] if raw.endswith('\n') else raw).split('\n')
+            for l in rawl:
+                logger.log(logging.DEBUG+1, 'STDOUT: %s', l)
+            rstrip1 = lambda x: x[:-1] if x.endswith(' ') else x
+            for l in rawl:
+                line = rstrip1(l)
+                if line == ':: Proceed with installation? [Y/n]':
+                    need_attention = False
+                    stdin.write('y\n')
+                    stdin.flush()
+                elif line.lower().endswith('[y/n]') or line == 'Enter a number (default=1):':
+                    need_attention = False
+                    if interactive:
+                        choice = ask_interactive_question(line, info=output)
+                        if choice is None:
+                            terminate(p, signal=SIGINT)
+                            raise UnknownQuestionError(line, output)
+                        elif choice:
+                            stdin.write(f"{choice}\n")
+                            stdin.flush()
+                    else:
                         terminate(p, signal=SIGINT)
                         raise UnknownQuestionError(line, output)
-                    elif choice:
-                        p.stdin.write(f"{choice}\n")
-                        p.stdin.flush()
-                else:
-                    terminate(p, signal=SIGINT)
-                    raise UnknownQuestionError(line, output)
-    except KeyboardInterrupt:
+            if need_attention and raw:
+                raise UnknownQuestionError("<caused by show cursor sequence>", output)
+    except (KeyboardInterrupt, UnknownQuestionError):
         terminate(p, signal=SIGINT)
         raise
     except Exception:

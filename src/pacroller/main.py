@@ -161,7 +161,7 @@ def do_system_upgrade(debug=False, interactive=False) -> checkReport:
             stdout_handler = logging.handlers.RotatingFileHandler(LOG_DIR / "stdout.log", mode='a',
                             maxBytes=10*1024**2, backupCount=2)
             stdout_handler.setFormatter(_formatter)
-            stdout_handler.setLevel(logging.DEBUG)
+            stdout_handler.setLevel(logging.DEBUG+1)
         except Exception:
             logging.exception(f"unable to save stdout to {LOG_DIR}")
             stdout_handler = None
@@ -296,6 +296,7 @@ def main() -> None:
     args = parser.parse_args()
     _log_format = '%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s' if args.debug else '%(levelname)s - %(message)s'
     logging.basicConfig(level=logging.DEBUG, format=_log_format)
+    logging.addLevelName(logging.DEBUG+1, 'DEBUG+1')
     if not args.debug:
         assert len(logger.handlers) == 1
         logger.handlers[0].setLevel(logging.INFO)
