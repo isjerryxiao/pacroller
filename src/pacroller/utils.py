@@ -128,6 +128,7 @@ def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool =
         raise
     if (ret := p.wait()) != 0:
         raise subprocess.CalledProcessError(ret, command, output)
+    output = ANSI_ESCAPE.sub('', output)
     return output.split('\n')
 
 def pacman_time_to_timestamp(stime: str) -> int:
