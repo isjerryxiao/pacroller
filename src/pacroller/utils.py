@@ -76,6 +76,7 @@ def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool =
                     pass
         Thread(target=set_timeout, args=(p, timeout, cleanup), daemon=True).start()
         output = ''
+        SHOW_CURSOR, HIDE_CURSOR = '\x1b[?25h', '\x1b[?25l'
         while p.poll() is None:
             try:
                 select([ptymaster], list(), list())
@@ -89,17 +90,19 @@ def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool =
             logger.debug(f"raw stdout: {_raw}")
             for b in GENERAL_NON_PRINTABLE:
                 _raw = _raw.replace(b, b'')
-            need_attention = b'\x1b[?25h' in _raw
             raw = _raw.decode('utf-8', errors='replace')
-            raw = raw.replace('\r\n', '\n')
-            raw = ANSI_ESCAPE.sub('', raw)
+            raw = raw.replace('\r\n', '\n').replace(HIDE_CURSOR, '')
+            rawl = raw.split('\n')
+            if output and output[-1] != '\n':
+                rawl[0] = output[output.rfind('\n')+1:] + rawl[0]
             output += raw
-            rawl = (raw[:-1] if raw.endswith('\n') else raw).split('\n')
-            for l in rawl:
+            for l in rawl[:-1]:
+                l = ANSI_ESCAPE.sub('', l)
                 logger.log(logging.DEBUG+1, 'STDOUT: %s', l)
             rstrip1 = lambda x: x[:-1] if x.endswith(' ') else x
+            rstrip_cursor = lambda s: rstrip1(s[:-len(SHOW_CURSOR)]) if s.endswith(SHOW_CURSOR) else f"{s}<no show cursor>"
             for l in rawl:
-                line = rstrip1(l)
+                line = rstrip_cursor(l)
                 if line == ':: Proceed with installation? [Y/n]':
                     need_attention = False
                     stdin.write('y\n')
@@ -117,8 +120,6 @@ def execute_with_io(command: List[str], timeout: int = 3600, interactive: bool =
                     else:
                         terminate(p, signal=SIGINT)
                         raise UnknownQuestionError(line, output)
-            if need_attention and raw:
-                raise UnknownQuestionError("<caused by show cursor sequence>", output)
     except (KeyboardInterrupt, UnknownQuestionError):
         terminate(p, signal=SIGINT)
         raise
