@@ -11,6 +11,7 @@ CONFIG_FILE_SMTP = 'smtp.json'
 F_KNOWN_OUTPUT_OVERRIDE = 'known_output_override.py'
 LIB_DIR = Path('/var/lib/pacroller')
 DB_FILE = 'db'
+NEWS_FILE = 'news'
 LOG_DIR = Path('/var/log/pacroller')
 PACMAN_CONFIG = '/etc/pacman.conf'
 PACMAN_LOG = '/var/log/pacman.log'
@@ -75,6 +76,7 @@ for i in NEEDRESTART_CMD:
     assert isinstance(i, str)
 
 SYSTEMD = bool(_config.get('systemd-check', True))
+NEWS = bool(_config.get('news-check', True))
 PACMAN_SCC = bool(_config.get('clear_pkg_cache', False))
 
 SMTP_ENABLED = bool(_smtp_config.get('enabled', False))

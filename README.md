@@ -40,6 +40,8 @@ A list of pacnew files that are silently ignored during parsing, any other pacne
 Custom pacman hooks and packages output matching is configurable via `/etc/pacroller/known_output_override.py`.
 ### check systemd status
 The "systemd-check" option allows pacroller to check fo degraded systemd services before an upgrade.
+### check news from archinux.org
+Automatically checks news before upgrade, unless "news-check" is set to false.
 ### clear package cache
 Pacroller wipes /var/cache/pacman/pkg after a successful upgrade if the option "clear_pkg_cache" is set.
 ### save pacman output
@@ -52,4 +54,3 @@ Configure `/etc/pacroller/smtp.json` to receive an email notification when an up
 - Your favourite package may not be supported, however it's easy to add another set of rules.
 - Restarting the whole system after a kernel upgrade is not implemented.
 - Human interaction is required occasionally.
-- Does not check news from archlinux.org

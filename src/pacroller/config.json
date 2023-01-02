@@ -26,5 +26,6 @@
         "-l"
     ],
     "systemd-check": true,
+    "news-check": true,
     "clear_pkg_cache": false
 }

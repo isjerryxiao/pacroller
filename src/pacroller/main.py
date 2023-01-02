@@ -12,11 +12,12 @@ from datetime import datetime
 from typing import List, Iterator
 from pacroller.utils import execute_with_io, UnknownQuestionError, back_readline, ask_interactive_question
 from pacroller.checker import log_checker, sync_err_is_net, upgrade_err_is_net, checkReport
-from pacroller.config import (CONFIG_DIR, CONFIG_FILE, LIB_DIR, DB_FILE, PACMAN_LOG, PACMAN_CONFIG,
-                              TIMEOUT, UPGRADE_TIMEOUT, NETWORK_RETRY, CUSTOM_SYNC, SYNC_SH,
-                              EXTRA_SAFE, SHELL, HOLD, NEEDRESTART, NEEDRESTART_CMD, SYSTEMD,
-                              PACMAN_PKG_DIR, PACMAN_SCC, PACMAN_DB_LCK, SAVE_STDOUT, LOG_DIR)
+from pacroller.config import (CONFIG_DIR, CONFIG_FILE, LIB_DIR, DB_FILE, NEWS_FILE, PACMAN_LOG,
+                              PACMAN_CONFIG, TIMEOUT, UPGRADE_TIMEOUT, NETWORK_RETRY, CUSTOM_SYNC,
+                              SYNC_SH, EXTRA_SAFE, SHELL, HOLD, NEEDRESTART, NEEDRESTART_CMD, SYSTEMD,
+                              NEWS, PACMAN_PKG_DIR, PACMAN_SCC, PACMAN_DB_LCK, SAVE_STDOUT, LOG_DIR)
 from pacroller.mailer import MailSender
+from pacroller.news import get_news
 
 logger = logging.getLogger()
 
@@ -31,6 +32,8 @@ class PackageHold(Exception):
 class CheckFailed(Exception):
     pass
 class NeedrestartFailed(Exception):
+    pass
+class NewsUnread(Exception):
     pass
 
 def sync() -> None:
@@ -318,6 +321,21 @@ def main() -> None:
                 logger.error(_err)
                 send_mail(_err)
                 exit(11)
+        if NEWS:
+            _newsf = LIB_DIR / NEWS_FILE
+            try:
+                _old_news = _newsf.read_text() if _newsf.exists() else ''
+                if (_news := get_news(_old_news)):
+                    _newsf.write_text(_news[0])
+                    _err = NewsUnread(_news)
+                    write_db(None, _err)
+                    for _n in _news:
+                        logger.warn(f"news: {_n}")
+                    send_mail(_err)
+                    exit(11)
+            except Exception:
+                send_mail(f"Checking news:\n{traceback.format_exc()}")
+                raise
         if Path(PACMAN_DB_LCK).exists():
             _err = f'Database is locked at {PACMAN_DB_LCK}'
             logger.error(_err)
