@@ -20,8 +20,8 @@ status [-v --verbose] [-m --max <number>]
     print details of a previously successful upgrade
 reset
     reset the current failure status
-test-smtp
-    send an test email to the configured address
+test-mail
+    send test mails to all configured notification destinations
 ```
 There is also a systemd timer for scheduled automatic upgrades.
 
@@ -47,8 +47,13 @@ Pacroller wipes /var/cache/pacman/pkg after a successful upgrade if the option "
 ### save pacman output
 Every time an upgrade is performed, the pacman output is stored into /var/log/pacroller. This can be configured via the "save_stdout" keyword.
 
-## Smtp
-Configure `/etc/pacroller/smtp.json` to receive an email notification when an upgrade fails. Note that pacroller will not send any email if stdin is a tty (can be overridden by the `--interactive` switch).
+## Notification
+When configuring your notification system, please note that pacroller will not send any notification if stdin is a tty (can be overridden by the `--interactive` switch).
+Notification will be sent through all configured methods when it requires manual inspection. Currently, two notification methods are supported: SMTP and telegram
+### SMTP
+Configure `/etc/pacroller/smtp.json` to receive email notifications.
+### Telegram
+Configure `/etc/pacroller/telegram.json` to receive telegram notifications.
 
 ## Limitations
 - Your favourite package may not be supported, however it's easy to add another set of rules.

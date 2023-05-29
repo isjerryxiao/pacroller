@@ -1,0 +1,6 @@
+{
+    "enabled": false,
+    "recipient": "",
+    "api_host": "api.telegram.org",
+    "bot_token": ""
+}
