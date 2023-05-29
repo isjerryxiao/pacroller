@@ -8,6 +8,7 @@ from typing import Any
 CONFIG_DIR = Path('/etc/pacroller')
 CONFIG_FILE = 'config.json'
 CONFIG_FILE_SMTP = 'smtp.json'
+CONFIG_FILE_TG = 'telegram.json'
 F_KNOWN_OUTPUT_OVERRIDE = 'known_output_override.py'
 LIB_DIR = Path('/var/lib/pacroller')
 DB_FILE = 'db'
@@ -33,6 +34,16 @@ if (smtp_cfg := (CONFIG_DIR / CONFIG_FILE_SMTP)).exists():
         _smtp_config: dict = json.loads(_smtp_cfg_text)
 else:
     _smtp_config = dict()
+
+if (tg_cfg := (CONFIG_DIR / CONFIG_FILE_TG)).exists():
+    try:
+        _tg_cfg_text = tg_cfg.read_text()
+    except PermissionError:
+        _tg_config = dict()
+    else:
+        _tg_config: dict = json.loads(_tg_cfg_text)
+else:
+    _tg_config = dict()
 
 def _import_module(fpath: Path) -> Any:
     spec = importlib.util.spec_from_file_location(str(fpath).removesuffix('.py').replace('/', '.'), fpath)
@@ -98,3 +109,8 @@ if SMTP_ENABLED:
             SMTP_AUTH.pop('password_base64')
         assert SMTP_AUTH['password']
         SMTP_AUTH = {k:v for k, v in SMTP_AUTH.items() if k in {'username', 'password'}}
+
+TG_ENABLED = bool(_tg_config.get('enabled', False))
+TG_BOT_TOKEN = _tg_config.get('bot_token', "")
+TG_API_HOST = _tg_config.get('api_host', 'api.telegram.org')
+TG_RECIPIENT = _tg_config.get('recipient', "")
