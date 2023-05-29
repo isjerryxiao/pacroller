@@ -5,7 +5,7 @@ from typing import List
 import logging
 import urllib.request, urllib.parse
 from platform import node
-from pacroller.config import NETWORK_RETRY, SMTP_ENABLED, SMTP_SSL, SMTP_HOST, SMTP_PORT, SMTP_FROM, SMTP_TO, SMTP_AUTH, TG_ENABLED, TG_BOT_TOKEN, TG_API_HOST, TG_RECIPIENT
+from pacroller.config import NETWORK_RETRY, SMTP_ENABLED, SMTP_SSL, SMTP_HOST, SMTP_PORT, SMTP_FROM, SMTP_TO, SMTP_AUTH, TG_ENABLED, TG_BOT_TOKEN, TG_API_HOST, TG_RECIPIENT, DEF_HTTP_HDRS
 
 logger = logging.getLogger()
 hostname = node() or "unknown-host"
@@ -42,14 +42,14 @@ def send_tg_message(text: str, subject: str, mailto: List[str]) -> bool:
         try:
             for recipient in mailto:
                 url = f'https://{TG_API_HOST}/bot{TG_BOT_TOKEN}/sendMessage'
-                headers = {'User-Agent': 'Mozilla/5.0 (compatible; Pacroller/0.1; +https://github.com/isjerryxiao/pacroller)'}
-                data = urllib.parse.urlencode({"chat_id": recipient, "text": f"<b>{subject}</b>\n\n<code>{text}</code>", "parse_mode": "HTML"})
-                req = urllib.request.Request(url, data=data.encode(), headers=headers)
+                headers = {'Content-Type': 'application/json'}
+                data = json.dumps({"chat_id": recipient, "text": f"<b>{subject}</b>\n\n<code>{text[:4000]}</code>", "parse_mode": "HTML"})
+                req = urllib.request.Request(url, data=data.encode('utf-8'), headers={**DEF_HTTP_HDRS, **headers})
                 resp = urllib.request.urlopen(req).read().decode('utf-8')
                 content = json.loads(resp)
-                if not content["ok"]:
+                if not content.get("ok"):
                     all_succeeded = False
-                    logger.error(f"unable to send telegram message to {recipient}: %s" % content['description'])
+                    logger.error(f"unable to send telegram message to {recipient}: {content.get('description')}")
         except Exception:
             logger.exception("error while send_tg_message")
         else:
@@ -79,4 +79,4 @@ class MailSender:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s')
-    MailSender().send_text_plain("This is a test mail\nIf you see this mail, your notification config is working.")
+    print(MailSender().send_text_plain("This is a test mail\nIf you see this mail, your notification config is working."))

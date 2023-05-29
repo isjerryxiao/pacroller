@@ -13,6 +13,7 @@ F_KNOWN_OUTPUT_OVERRIDE = 'known_output_override.py'
 LIB_DIR = Path('/var/lib/pacroller')
 DB_FILE = 'db'
 NEWS_FILE = 'news'
+DEF_HTTP_HDRS = {'User-Agent': 'Mozilla/5.0 (compatible; Pacroller/0.1; +https://github.com/isjerryxiao/pacroller)'}
 LOG_DIR = Path('/var/log/pacroller')
 PACMAN_CONFIG = '/etc/pacman.conf'
 PACMAN_LOG = '/var/log/pacman.log'

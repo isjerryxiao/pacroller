@@ -1,11 +1,11 @@
 import urllib.request
 from xml.etree import ElementTree as etree
 from typing import List
+from pacroller.config import DEF_HTTP_HDRS
 
 def get_news(old_news: str) -> List[str]:
     ARCH_RSS_URL = 'https://archlinux.org/feeds/news/'
-    headers = {'User-Agent': 'Mozilla/5.0 (compatible; Pacroller/0.1; +https://github.com/isjerryxiao/pacroller)'}
-    req = urllib.request.Request(ARCH_RSS_URL, data=None, headers=headers)
+    req = urllib.request.Request(ARCH_RSS_URL, data=None, headers=DEF_HTTP_HDRS)
     rss_text = urllib.request.urlopen(req).read().decode('utf-8')
 
     xml_root = etree.fromstring(rss_text)
