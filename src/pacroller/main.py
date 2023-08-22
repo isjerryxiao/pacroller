@@ -84,15 +84,19 @@ def upgrade(interactive=False) -> List[str]:
     )
     if qp.returncode != 1:
         qp.check_returncode()
-    sp = subprocess.run(
-        sync_upgrade_cmd,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        encoding='utf-8',
-        timeout=TIMEOUT,
-        check=True
-    )
+    try:
+        sp = subprocess.run(
+            sync_upgrade_cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            encoding='utf-8',
+            timeout=TIMEOUT,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        logger.error(f"upgrade check failed {e.returncode=} {e.output=}")
+        raise
     upgrade_pkgnames = list()
     upgrade_pkgs = list()
     for line in filter(None, qp.stdout.split('\n')):

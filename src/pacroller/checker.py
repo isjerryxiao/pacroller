@@ -240,30 +240,31 @@ def _log_parser(log: List[str], report: checkReport) -> None:
             else:
                 report.crit(f'[NOM-ALPM] {msg}')
         elif source == 'ALPM-SCRIPTLET':
-            (_, _, _pmsg) = _split_log_line(log[ln-1])
-            if _m := REGEX['l_upgrade'].match(_pmsg):
-                pkg, *_ = _m.groups()
-            elif _m := REGEX['l_install'].match(_pmsg):
-                pkg, *_ = _m.groups()
-            elif _m := REGEX['l_remove'].match(_pmsg):
-                pkg, *_ = _m.groups()
-            elif _m := REGEX['l_downgrade'].match(_pmsg):
-                pkg, *_ = _m.groups()
-            elif _m := REGEX['l_reinstall'].match(_pmsg):
-                pkg, *_ = _m.groups()
+            (_sourcem1, _, _pmsg) = _split_log_line(log[ln-1])
+            for action in {'upgrade', 'install', 'remove', 'downgrade', 'reinstall'}:
+                if _m := REGEX[f"l_{action}"].match(_pmsg):
+                    pkg, *_ = _m.groups()
+                    break
             else:
                 report.crit(f'[NOM-SCRIPTLET] {_pmsg}')
                 ln += 1
+                action = 'unknown'
                 continue
-            logger.debug(f'.install start {pkg=}')
+            logger.debug(f'.install start {pkg=} {action=}')
             while True:
                 line = log[ln]
                 (_, source, msg) = _split_log_line(line)
                 if source == 'ALPM-SCRIPTLET':
                     for r in (*(KNOWN_PACKAGE_OUTPUT.get('', [])), *(KNOWN_PACKAGE_OUTPUT.get(pkg, []))):
-                        if match(r, msg):
-                            logger.debug(f'.install output match {pkg=} {msg=} {r=}')
-                            break
+                        if isinstance(r, dict):
+                            if action in r.get('action'):
+                                if match(r.get('regex'), msg):
+                                    logger.debug(f'.install output match {pkg=} {action=} {msg=} {r=}')
+                                    break
+                        else:
+                            if match(r, msg):
+                                logger.debug(f'.install output match {pkg=} {msg=} {r=}')
+                                break
                     else:
                         report.warn(f'package {pkg} says {msg}')
                 else:

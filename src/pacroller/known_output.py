@@ -22,13 +22,22 @@ KNOWN_HOOK_OUTPUT = {
         r'==> Image generation successful.*',
         r'[ ]+-> .+',
         r'ssh-.* .*',
-    ],
-    '70-dkms-upgrade.hook': [
-        r'==> dkms remove --no-depmod -m .* -v .* -k .*',
+        r'==> Using default configuration file: \'/etc/mkinitcpio\.conf\'',
     ],
     '70-dkms-install.hook': [
-        r'==> dkms install --no-depmod -m .* -v .* -k .*',
-        r'==> depmod .*',
+        r'==> dkms install --no-depmod [^ ]+ -k [^ ]+',
+        r'==> depmod [^ ]+',
+    ],
+    '71-dkms-remove.hook': [
+        r'==> dkms remove --no-depmod [^ ]+ -k [^ ]+',
+        r'==> depmod [^ ]+',
+    ],
+    '70-dkms-upgrade.hook': [
+        r'==> dkms remove --no-depmod [^ ]+ -k [^ ]+',
+        r'==> depmod [^ ]+',
+    ],
+    '90-update-appstream-cache.hook': [
+        r'✔ Metadata cache was updated successfully\.',
     ],
     **KNOWN_HOOK_OUTPUT_OVERRIDE
 }
@@ -48,6 +57,7 @@ _keyring_output = [
     r'gpg: depth:.+ valid:.+ signed:.+ trust:.+, .+, .+, .+, .+, .+',
     r'gpg: key .+: no user ID for key signature packet of class .+',
     r'gpg: inserting ownertrust of .+',
+    r'gpg: changing ownertrust from .+ to .+',
     r'[ ]+-> .+',
 ]
 
@@ -70,8 +80,8 @@ KNOWN_PACKAGE_OUTPUT = {
     'fontconfig': [
         r'Rebuilding fontconfig cache\.\.\.',
     ],
-    'nvidia-utils': [
-        r'If you run into trouble with CUDA not being available, run nvidia-modprobe first\.',
+    'lib32-fontconfig': [
+        r'Rebuilding 32-bit fontconfig cache\.\.\.',
     ],
     'virtualbox': _vbox_output,
     'virtualbox-ext-oracle': _vbox_output,
@@ -79,8 +89,20 @@ KNOWN_PACKAGE_OUTPUT = {
     'virtualbox-ext-vnc-svn': _vbox_output,
     'tor-browser': [
         r'$',
-        r'==> The copy of Tor Browser in your home directory will be upgraded at the',
-        r'==> first time you run it as your normal user\. Just start it and have fun!',
+        {'action': ['upgrade'], 'regex': r'==> The copy of Tor Browser in your home directory will be upgraded at the'},
+        {'action': ['upgrade'], 'regex': r'==> first time you run it as your normal user\. Just start it and have fun!'},
+    ],
+    'grub': [
+        {'action': ['upgrade'], 'regex': r':: To use the new features provided in this GRUB update, it is recommended'},
+        {'action': ['upgrade'], 'regex': r'   to install it to the MBR or UEFI\. Due to potential configuration'},
+        {'action': ['upgrade'], 'regex': r'   incompatibilities, it is advised to run both, installation and generation'},
+        {'action': ['upgrade'], 'regex': r'   of configuration:'},
+        {'action': ['upgrade'], 'regex': r'     \$ grub-install \.\.\.'},
+        {'action': ['upgrade'], 'regex': r'     \$ grub-mkconfig -o /boot/grub/grub\.cfg'},
+    ],
+    'nvidia-utils': [
+        {'action': ['upgrade'], 'regex': r'If you run into trouble with CUDA not being available, run nvidia-modprobe first\.'},
+        {'action': ['upgrade'], 'regex': r'If you use GDM on Wayland, you might have to run systemctl enable --now nvidia-resume\.service'},
     ],
     **KNOWN_PACKAGE_OUTPUT_OVERRIDE
 }
