@@ -23,6 +23,7 @@ KNOWN_HOOK_OUTPUT = {
         r'[ ]+-> .+',
         r'ssh-.* .*',
         r'==> Using default configuration file: \'/etc/mkinitcpio\.conf\'',
+        r'==> WARNING: consolefont: no font found in configuration',
     ],
     '70-dkms-install.hook': [
         r'==> dkms install --no-depmod [^ ]+ -k [^ ]+',
