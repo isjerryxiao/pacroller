@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pacroller",
-    version="0.1.7",
+    version="0.1.8",
     author="Jerry Xiao",
     author_email="pacroller@mail.jerryxiao.cc",
     description="unattended upgrade for archlinux",
