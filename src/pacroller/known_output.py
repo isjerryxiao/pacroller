@@ -22,7 +22,8 @@ KNOWN_HOOK_OUTPUT = {
         r'==> Image generation successful.*',
         r'[ ]+-> .+',
         r'ssh-.* .*',
-        r'==> Using default configuration file: \'/etc/mkinitcpio\.conf\'',
+        r'==> Using configuration file: .+',
+        r'==> Using default configuration file: .+',
         r'==> WARNING: consolefont: no font found in configuration',
     ],
     '70-dkms-install.hook': [
