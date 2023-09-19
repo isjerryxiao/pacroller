@@ -31,10 +31,12 @@ KNOWN_HOOK_OUTPUT = {
         r'==> depmod [^ ]+',
     ],
     '71-dkms-remove.hook': [
+        r'==> dkms remove [^ ]+',
         r'==> dkms remove --no-depmod [^ ]+ -k [^ ]+',
         r'==> depmod [^ ]+',
     ],
     '70-dkms-upgrade.hook': [
+        r'==> dkms remove [^ ]+',
         r'==> dkms remove --no-depmod [^ ]+ -k [^ ]+',
         r'==> depmod [^ ]+',
     ],
