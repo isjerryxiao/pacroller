@@ -101,8 +101,8 @@ KNOWN_PACKAGE_OUTPUT = {
         {'action': ['upgrade'], 'regex': r'   to install it to the MBR or UEFI\. Due to potential configuration'},
         {'action': ['upgrade'], 'regex': r'   incompatibilities, it is advised to run both, installation and generation'},
         {'action': ['upgrade'], 'regex': r'   of configuration:'},
-        {'action': ['upgrade'], 'regex': r'     \$ grub-install \.\.\.'},
-        {'action': ['upgrade'], 'regex': r'     \$ grub-mkconfig -o /boot/grub/grub\.cfg'},
+        {'action': ['upgrade'], 'regex': r'     # grub-install \.\.\.'},
+        {'action': ['upgrade'], 'regex': r'     # grub-mkconfig -o /boot/grub/grub\.cfg'},
     ],
     'nvidia-utils': [
         {'action': ['upgrade'], 'regex': r'If you run into trouble with CUDA not being available, run nvidia-modprobe first\.'},
