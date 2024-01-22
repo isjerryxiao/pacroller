@@ -258,14 +258,17 @@ def main() -> None:
         )
         locales = [l.lower() for l in p.stdout.strip().split('\n')]
         preferred = ['en_US.UTF-8', 'C.UTF-8']
+        env_vars = ['LANG', 'LC_ALL']
         for l in preferred:
             if l.lower() in locales:
                 logger.debug(f'using locale {l}')
-                environ['LANG'] = l
+                for env_var in env_vars:
+                    environ[env_var] = l
                 break
         else:
             logger.debug('using fallback locale C')
-            environ['LANG'] = 'C'
+            for env_var in env_vars:
+                environ[env_var] = 'C'
     def clear_pkg_cache() -> None:
         logger.debug('clearing package cache')
         for i in Path(PACMAN_PKG_DIR).iterdir():
