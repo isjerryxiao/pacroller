@@ -19,7 +19,7 @@ KNOWN_HOOK_OUTPUT = {
         r'==> WARNING: Possibly missing firmware for module: .+',
         r'==> Generating module dependencies',
         r'==> Creating (?:.+)-compressed initcpio image: .+',
-        r'==> Image generation successful.*',
+        r'==> Initcpio image generation successful',
         r'[ ]+-> .+',
         r'ssh-.* .*',
         r'==> Using configuration file: .+',
