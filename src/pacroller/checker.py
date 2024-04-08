@@ -246,7 +246,7 @@ def _log_parser(log: List[str], report: checkReport) -> None:
                     pkg, *_ = _m.groups()
                     break
             else:
-                report.crit(f'[NOM-SCRIPTLET] {_pmsg}')
+                report.crit(f'[NOM-SCRIPTLET] {msg} {_pmsg}')
                 ln += 1
                 action = 'unknown'
                 continue
