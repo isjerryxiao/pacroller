@@ -135,6 +135,7 @@ def pacman_time_to_timestamp(stime: str) -> int:
     ''' the format pacman is using seems to be not iso compatible '''
     dt = datetime.strptime(stime, "%Y-%m-%dT%H:%M:%S%z")
     return mktime(dt.astimezone().timetuple())
+pacman_time_to_timestamp('2024-01-01T00:00:00+0000')
 
 def back_readline(fp: BinaryIO) -> Iterator[str]:
     pos = fp.seek(0, 2)
