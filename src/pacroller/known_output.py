@@ -25,6 +25,7 @@ KNOWN_HOOK_OUTPUT = {
         r'==> Using configuration file: .+',
         r'==> Using default configuration file: .+',
         r'==> WARNING: consolefont: no font found in configuration',
+        r'==> Decompressing (?:.+)-compressed firmware files',
     ],
     '70-dkms-install.hook': [
         r'==> dkms install --no-depmod [^ ]+ -k [^ ]+',
