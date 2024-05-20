@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pacroller",
-    version="0.1.8",
+    version="0.1.9",
     author="Jerry Xiao",
     author_email="pacroller@mail.jerryxiao.cc",
     description="unattended upgrade for archlinux",
@@ -20,7 +20,7 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: POSIX :: Linux",
     ],
-    python_requires='>=3.9',
+    python_requires='>=3.12',
     entry_points={
         'console_scripts': [
             'pacroller=pacroller.main:main',
