@@ -9,6 +9,7 @@ CONFIG_DIR = Path('/etc/pacroller')
 CONFIG_FILE = 'config.json'
 CONFIG_FILE_SMTP = 'smtp.json'
 CONFIG_FILE_TG = 'telegram.json'
+CONFIG_FILE_GOTIFY = 'gotify.json'
 F_KNOWN_OUTPUT_OVERRIDE = 'known_output_override.py'
 LIB_DIR = Path('/var/lib/pacroller')
 DB_FILE = 'db'
@@ -45,6 +46,17 @@ if (tg_cfg := (CONFIG_DIR / CONFIG_FILE_TG)).exists():
         _tg_config: dict = json.loads(_tg_cfg_text)
 else:
     _tg_config = dict()
+
+if (gotify_cfg := (CONFIG_DIR / CONFIG_FILE_GOTIFY)).exists():
+    try:
+        _gotify_cfg_text = gotify_cfg.read_text()
+    except PermissionError:
+        _gotify_config = dict()
+    else:
+        _gotify_config: dict = json.loads(_gotify_cfg_text)
+else:
+    _gotify_config = dict()
+
 
 def _import_module(fpath: Path) -> Any:
     spec = importlib.util.spec_from_file_location(str(fpath).removesuffix('.py').replace('/', '.'), fpath)
@@ -115,3 +127,8 @@ TG_ENABLED = bool(_tg_config.get('enabled', False))
 TG_BOT_TOKEN = _tg_config.get('bot_token', "")
 TG_API_HOST = _tg_config.get('api_host', 'api.telegram.org')
 TG_RECIPIENT = _tg_config.get('recipient', "")
+
+GOTIFY_ENABLED = bool(_gotify_config.get('enabled', False))
+GOTIFY_TOKEN = _gotify_config.get('token', "")
+GOTIFY_HOST = _gotify_config.get('host_url', '')
+GOTIFY_PRIORITY = _gotify_config.get('priority', 5)

@@ -49,11 +49,13 @@ Every time an upgrade is performed, the pacman output is stored into /var/log/pa
 
 ## Notification
 When configuring your notification system, please note that pacroller will not send any notification if stdin is a tty (can be overridden by the `--interactive` switch).
-Notification will be sent through all configured methods when it requires manual inspection. Currently, two notification methods are supported: SMTP and telegram
+Notification will be sent through all configured methods when it requires manual inspection. Currently, two notification methods are supported: SMTP, telegram, and Gotify
 ### SMTP
 Configure `/etc/pacroller/smtp.json` to receive email notifications.
 ### Telegram
 Configure `/etc/pacroller/telegram.json` to receive telegram notifications.
+### Gotify
+Configure `/etc/pacroller/gotify.json` to receive Gotify notifications.
 
 ## Limitations
 - Your favourite package may not be supported, however it's easy to add another set of rules.

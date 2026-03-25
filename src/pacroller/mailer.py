@@ -5,11 +5,10 @@ from typing import List
 import logging
 import urllib.request, urllib.parse
 from platform import node
-from pacroller.config import NETWORK_RETRY, SMTP_ENABLED, SMTP_SSL, SMTP_HOST, SMTP_PORT, SMTP_FROM, SMTP_TO, SMTP_AUTH, TG_ENABLED, TG_BOT_TOKEN, TG_API_HOST, TG_RECIPIENT, DEF_HTTP_HDRS
+from pacroller.config import NETWORK_RETRY, SMTP_ENABLED, SMTP_SSL, SMTP_HOST, SMTP_PORT, SMTP_FROM, SMTP_TO, SMTP_AUTH, TG_ENABLED, TG_BOT_TOKEN, TG_API_HOST, TG_RECIPIENT, GOTIFY_ENABLED, GOTIFY_TOKEN, GOTIFY_HOST, GOTIFY_PRIORITY, DEF_HTTP_HDRS
 
 logger = logging.getLogger()
 hostname = node() or "unknown-host"
-
 
 def send_email(text: str, subject: str, mailto: List[str]) -> bool:
     for _ in range(NETWORK_RETRY):
@@ -60,11 +59,30 @@ def send_tg_message(text: str, subject: str, mailto: List[str]) -> bool:
         return False
     return all_succeeded
 
+def send_gotify_message(text: str, subject: str) -> bool:
+    for _ in range(1):
+        all_succeeded = True
+        try:
+            url = f'https://{GOTIFY_HOST}/message?token={GOTIFY_TOKEN}'
+            headers = {'Content-Type': 'application/json'}
+            data = json.dumps({"message": f"{text[:4000]}", "title": f"{subject}", "priority": GOTIFY_PRIORITY})
+            req = urllib.request.Request(url, data=data.encode('utf-8'), headers={**DEF_HTTP_HDRS, **headers})
+            resp = urllib.request.urlopen(req).read().decode('utf-8')
+        except Exception:
+            logger.exception("error while send_gotify_message")
+        else:
+            logger.debug(f"Gotify message sent {text=}")
+            break
+    else:
+        logger.error(f"unable to send Gotify message after 5 attempts {text=}")
+        return False
+    return all_succeeded
+
 
 class MailSender:
     def __init__(self) -> None:
         pass
-    def send_text_plain(elsf, text: str, subject: str = f"pacroller on {hostname}") -> bool:
+    def send_text_plain(self, text: str, subject: str = f"pacroller on {hostname}") -> bool:
         if_failed = False
         if SMTP_ENABLED:
             if not send_email(text, subject, SMTP_TO.split()):
@@ -72,7 +90,10 @@ class MailSender:
         if TG_ENABLED:
             if not send_tg_message(text, subject, TG_RECIPIENT.split()):
                 if_failed = True
-        if not SMTP_ENABLED and not TG_ENABLED:
+        if GOTIFY_ENABLED:
+            if not send_gotify_message(text, subject):
+                f_failed = True
+        if not SMTP_ENABLED and not TG_ENABLED and not GOTIFY_ENABLED:
             return None
         return not if_failed
 
