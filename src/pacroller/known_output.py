@@ -80,7 +80,7 @@ KNOWN_PACKAGE_OUTPUT = {
     'glibc': [
         r'Generating locales\.\.\.',
         r'Generation complete\.',
-        r'  .*_.*\.\.\. done',
+        r'  .*\.\.\. done',
     ],
     'fontconfig': [
         r'Rebuilding fontconfig cache\.\.\.',
