@@ -3,6 +3,9 @@ KNOWN_HOOK_OUTPUT_OVERRIDE, KNOWN_PACKAGE_OUTPUT_OVERRIDE = KNOWN_OUTPUT_OVERRID
 
 KNOWN_HOOK_OUTPUT = {
     '': [],
+    '10-linux-modules-post.hook': [
+        r'\++ .+',
+    ],
     '20-systemd-sysusers.hook': [
         r'(?i)creating group .+',
         r'(?i)creating user .+',
